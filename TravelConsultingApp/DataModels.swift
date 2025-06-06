@@ -1,10 +1,3 @@
-//
-//  DataModels.swift
-//  TravelConsultingApp
-//
-//  Created by Nick Christus on 6/6/25.
-//
-
 import Foundation
 import FirebaseFirestore
 
@@ -22,7 +15,7 @@ struct TripSubmission: Codable {
 }
 
 // MARK: - Trip Status Model
-struct Trip: Identifiable, Codable {
+struct TravelTrip: Identifiable, Codable {
     let id: String
     let userId: String
     let destination: String

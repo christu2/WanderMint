@@ -1,21 +1,11 @@
-//
-//  TripService.swift
-//  TravelConsultingApp
-//
-//  Created by Nick Christus on 6/6/25.
-//
-
-
 import Foundation
 import Firebase
 import FirebaseAuth
 import FirebaseFirestore
-import FirebaseFunctions
 
 @MainActor
 class TripService: ObservableObject {
     private let db = Firestore.firestore()
-    private let functions = Functions.functions()
     
     // MARK: - Submit Trip
     func submitTrip(_ submission: TripSubmission) async throws {
@@ -23,25 +13,85 @@ class TripService: ObservableObject {
             throw TravelAppError.authenticationFailed
         }
         
-        let data: [String: Any] = [
+        // Get ID token for authentication
+        let idToken = try await user.getIDToken()
+        
+        // Format dates for the backend - use ISO 8601 format
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        var requestData: [String: Any] = [
             "destination": submission.destination,
-            "startDate": Timestamp(date: submission.startDate),
-            "endDate": Timestamp(date: submission.endDate),
+            "startDate": dateFormatter.string(from: submission.startDate),
+            "endDate": dateFormatter.string(from: submission.endDate),
             "paymentMethod": submission.paymentMethod,
             "flexibleDates": submission.flexibleDates
         ]
         
+        print("Submitting trip data: \(requestData)")
+        
+        // Create the HTTP request - use the correct v2 function URL
+        guard let url = URL(string: "https://submittrip-z7ztkcre7q-uc.a.run.app") else {
+            throw TravelAppError.networkError("Invalid URL")
+        }
+        
+        print("Making request to: \(url)")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        
+        // Add debugging headers
+        print("Request headers: \(request.allHTTPHeaderFields ?? [:])")
+        
         do {
-            let result = try await functions.httpsCallable("submitTrip").call(data)
-            print("Trip submitted successfully: \(result)")
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestData)
         } catch {
-            print("Error submitting trip: \(error)")
-            throw TravelAppError.submissionFailed(error.localizedDescription)
+            throw TravelAppError.dataError("Failed to encode request data")
+        }
+        
+        // Make the network call
+        do {
+            print("Sending HTTP request...")
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            print("Response received: \(response)")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw TravelAppError.networkError("Invalid response")
+            }
+            
+            print("HTTP Status Code: \(httpResponse.statusCode)")
+            let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+            print("Response body: \(responseString)")
+            
+            if httpResponse.statusCode == 200 {
+                print("Trip submitted successfully")
+                return
+            } else if httpResponse.statusCode == 400 {
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Bad Request"
+                print("Bad Request Error: \(errorMessage)")
+                throw TravelAppError.submissionFailed("Invalid request: \(errorMessage)")
+            } else if httpResponse.statusCode == 429 {
+                throw TravelAppError.submissionFailed("Daily submission limit reached")
+            } else if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                throw TravelAppError.authenticationFailed
+            } else {
+                let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw TravelAppError.submissionFailed(errorMessage)
+            }
+        } catch {
+            if error is TravelAppError {
+                throw error
+            } else {
+                throw TravelAppError.networkError(error.localizedDescription)
+            }
         }
     }
     
     // MARK: - Fetch User Trips
-    func fetchUserTrips() async throws -> [Trip] {
+    func fetchUserTrips() async throws -> [TravelTrip] {
         guard let user = Auth.auth().currentUser else {
             throw TravelAppError.authenticationFailed
         }
@@ -52,14 +102,25 @@ class TripService: ObservableObject {
                 .order(by: "createdAt", descending: true)
                 .getDocuments()
             
-            let trips = try snapshot.documents.compactMap { document -> Trip? in
+            print("Fetched \(snapshot.documents.count) trip documents")
+            
+            let trips = try snapshot.documents.compactMap { document -> TravelTrip? in
                 var data = document.data()
                 data["id"] = document.documentID
                 
-                return try self.parseTrip(from: data)
+                print("Processing document \(document.documentID) with data keys: \(data.keys.sorted())")
+                
+                do {
+                    return try self.parseTrip(from: data)
+                } catch {
+                    print("Failed to parse trip \(document.documentID): \(error)")
+                    return nil // Skip invalid trips instead of failing everything
+                }
             }
             
+            print("Successfully parsed \(trips.count) trips")
             return trips
+            
         } catch {
             print("Error fetching trips: \(error)")
             throw TravelAppError.dataError(error.localizedDescription)
@@ -67,7 +128,7 @@ class TripService: ObservableObject {
     }
     
     // MARK: - Fetch Single Trip
-    func fetchTrip(tripId: String) async throws -> Trip? {
+    func fetchTrip(tripId: String) async throws -> TravelTrip? {
         guard Auth.auth().currentUser != nil else {
             throw TravelAppError.authenticationFailed
         }
@@ -90,7 +151,7 @@ class TripService: ObservableObject {
     }
     
     // MARK: - Listen to Trip Updates
-    func listenToTrip(tripId: String, completion: @escaping (Result<Trip?, Error>) -> Void) -> ListenerRegistration {
+    func listenToTrip(tripId: String, completion: @escaping (Result<TravelTrip?, Error>) -> Void) -> ListenerRegistration {
         return db.collection("trips").document(tripId).addSnapshotListener { document, error in
             if let error = error {
                 completion(.failure(TravelAppError.dataError(error.localizedDescription)))
@@ -115,31 +176,61 @@ class TripService: ObservableObject {
     }
     
     // MARK: - Helper Methods
-    private func parseTrip(from data: [String: Any]) throws -> Trip {
-        guard let id = data["id"] as? String,
-              let userId = data["userId"] as? String,
-              let destination = data["destination"] as? String,
-              let startDate = data["startDate"] as? Timestamp,
-              let endDate = data["endDate"] as? Timestamp,
-              let paymentMethod = data["paymentMethod"] as? String,
-              let flexibleDates = data["flexibleDates"] as? Bool,
-              let statusString = data["status"] as? String,
-              let status = TripStatusType(rawValue: statusString),
-              let createdAt = data["createdAt"] as? Timestamp else {
-            throw TravelAppError.dataError("Invalid trip data structure")
+    private func parseTrip(from data: [String: Any]) throws -> TravelTrip {
+        // Debug: Print the raw data structure
+        print("Parsing trip data: \(data)")
+        
+        guard let id = data["id"] as? String else {
+            throw TravelAppError.dataError("Missing trip ID")
+        }
+        
+        guard let userId = data["userId"] as? String else {
+            throw TravelAppError.dataError("Missing user ID")
+        }
+        
+        guard let destination = data["destination"] as? String else {
+            throw TravelAppError.dataError("Missing destination")
+        }
+        
+        guard let paymentMethod = data["paymentMethod"] as? String else {
+            throw TravelAppError.dataError("Missing payment method")
+        }
+        
+        let flexibleDates = data["flexibleDates"] as? Bool ?? false
+        
+        // Parse status with fallback
+        let statusString = data["status"] as? String ?? "submitted"
+        let status = TripStatusType(rawValue: statusString) ?? .submitted
+        
+        // Parse timestamps with better error handling
+        guard let startDate = data["startDate"] as? Timestamp else {
+            throw TravelAppError.dataError("Missing or invalid start date")
+        }
+        
+        guard let endDate = data["endDate"] as? Timestamp else {
+            throw TravelAppError.dataError("Missing or invalid end date")
+        }
+        
+        guard let createdAt = data["createdAt"] as? Timestamp else {
+            throw TravelAppError.dataError("Missing or invalid created date")
         }
         
         let updatedAt = data["updatedAt"] as? Timestamp
         
-        // Parse recommendation if it exists
+        // Parse recommendation if it exists (optional)
         let recommendation: Recommendation?
         if let recData = data["recommendation"] as? [String: Any] {
-            recommendation = try parseRecommendation(from: recData)
+            do {
+                recommendation = try parseRecommendation(from: recData)
+            } catch {
+                print("Warning: Failed to parse recommendation: \(error)")
+                recommendation = nil // Don't fail the whole trip if recommendation fails
+            }
         } else {
             recommendation = nil
         }
         
-        return Trip(
+        return TravelTrip(
             id: id,
             userId: userId,
             destination: destination,

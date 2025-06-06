@@ -1,10 +1,3 @@
-//
-//  TripsListView.swift
-//  TravelConsultingApp
-//
-//  Created by Nick Christus on 6/6/25.
-//
-
 import SwiftUI
 
 struct TripsListView: View {
@@ -55,7 +48,7 @@ struct TripsListView: View {
 }
 
 struct TripRowView: View {
-    let trip: Trip
+    let trip: TravelTrip
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -120,7 +113,7 @@ struct StatusBadge: View {
 // MARK: - ViewModel
 @MainActor
 class TripsListViewModel: ObservableObject {
-    @Published var trips: [Trip] = []
+    @Published var trips: [TravelTrip] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     
@@ -132,8 +125,11 @@ class TripsListViewModel: ObservableObject {
         
         Task {
             do {
+                print("Loading trips...")
                 trips = try await tripService.fetchUserTrips()
+                print("Loaded \(trips.count) trips successfully")
             } catch {
+                print("Error loading trips: \(error)")
                 errorMessage = error.localizedDescription
             }
             isLoading = false

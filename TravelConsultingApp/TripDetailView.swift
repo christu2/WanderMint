@@ -1,14 +1,7 @@
-//
-//  TripDetailView.swift
-//  TravelConsultingApp
-//
-//  Created by Nick Christus on 6/6/25.
-//
-
 import SwiftUI
 
 struct TripDetailView: View {
-    let trip: Trip
+    let trip: TravelTrip
     @StateObject private var viewModel = TripDetailViewModel()
     
     var body: some View {
@@ -158,7 +151,7 @@ struct CostBreakdownView: View {
                     Text("Total Estimate")
                         .font(.headline)
                     Spacer()
-                    Text("\(cost.currency) \(cost.totalEstimate, specifier: "%.2f")")
+                    Text("\(cost.currency) \(formatCostAmount(cost.totalEstimate))")
                         .font(.headline)
                         .bold()
                 }
@@ -167,6 +160,13 @@ struct CostBreakdownView: View {
         .padding()
         .background(Color.green.opacity(0.1))
         .cornerRadius(8)
+    }
+    
+    private func formatCostAmount(_ amount: Double) -> String {
+        if amount.isNaN || amount.isInfinite {
+            return "0.00"
+        }
+        return String(format: "%.2f", max(0, amount))
     }
 }
 
@@ -179,9 +179,16 @@ struct CostRow: View {
         HStack {
             Text(label)
             Spacer()
-            Text("\(currency) \(amount, specifier: "%.2f")")
+            Text("\(currency) \(formatAmount(amount))")
         }
         .font(.subheadline)
+    }
+    
+    private func formatAmount(_ amount: Double) -> String {
+        if amount.isNaN || amount.isInfinite {
+            return "0.00"
+        }
+        return String(format: "%.2f", max(0, amount))
     }
 }
 
@@ -200,7 +207,7 @@ struct ActivitiesView: View {
                             .font(.subheadline)
                             .bold()
                         Spacer()
-                        Text("$\(activity.estimatedCost, specifier: "%.0f")")
+                        Text("$\(formatActivityCost(activity.estimatedCost))")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -229,6 +236,13 @@ struct ActivitiesView: View {
         .background(Color.purple.opacity(0.1))
         .cornerRadius(8)
     }
+    
+    private func formatActivityCost(_ cost: Double) -> String {
+        if cost.isNaN || cost.isInfinite {
+            return "0"
+        }
+        return String(format: "%.0f", max(0, cost))
+    }
 }
 
 struct AccommodationsView: View {
@@ -250,7 +264,7 @@ struct AccommodationsView: View {
                             Image(systemName: "star.fill")
                                 .foregroundColor(.yellow)
                                 .font(.caption)
-                            Text("\(accommodation.rating, specifier: "%.1f")")
+                            Text(String(format: "%.1f", max(0, min(5, accommodation.rating))))
                                 .font(.caption)
                         }
                     }
@@ -305,7 +319,7 @@ struct TransportationView: View {
                         .font(.caption)
                     Text("Best Booking Time: \(flightInfo.bestBookingTime)")
                         .font(.caption)
-                    Text("Estimated Cost: $\(transportation.estimatedFlightCost, specifier: "%.0f")")
+                    Text("Estimated Cost: $\(formatTransportCost(transportation.estimatedFlightCost))")
                         .font(.caption)
                         .bold()
                 }
@@ -319,7 +333,7 @@ struct TransportationView: View {
                         .bold()
                     Text(transportation.localTransport.joined(separator: ", "))
                         .font(.caption)
-                    Text("Estimated Cost: $\(transportation.localTransportCost, specifier: "%.0f")")
+                    Text("Estimated Cost: $\(formatTransportCost(transportation.localTransportCost))")
                         .font(.caption)
                         .bold()
                 }
@@ -328,6 +342,13 @@ struct TransportationView: View {
         .padding()
         .background(Color.indigo.opacity(0.1))
         .cornerRadius(8)
+    }
+    
+    private func formatTransportCost(_ cost: Double) -> String {
+        if cost.isNaN || cost.isInfinite {
+            return "0"
+        }
+        return String(format: "%.0f", max(0, cost))
     }
 }
 
@@ -384,7 +405,7 @@ class TripDetailViewModel: ObservableObject {
 
 #Preview {
     NavigationView {
-        TripDetailView(trip: Trip(
+        TripDetailView(trip: TravelTrip(
             id: "preview",
             userId: "user123",
             destination: "Tokyo, Japan",
