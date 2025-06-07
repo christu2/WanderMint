@@ -9,12 +9,25 @@ class TripService: ObservableObject {
     
     // MARK: - Submit Enhanced Trip
     func submitEnhancedTrip(_ submission: EnhancedTripSubmission) async throws {
+        print("🔐 Checking authentication...")
         guard let user = Auth.auth().currentUser else {
+            print("❌ No current user found")
             throw TravelAppError.authenticationFailed
         }
         
+        print("✅ User found: \(user.uid)")
+        print("📧 User email: \(user.email ?? "No email")")
+        
         // Get ID token for authentication
-        let idToken = try await user.getIDToken()
+        print("🔑 Getting ID token...")
+        let idToken: String
+        do {
+            idToken = try await user.getIDToken()
+            print("✅ Got ID token (length: \(idToken.count))")
+        } catch {
+            print("❌ Failed to get ID token: \(error)")
+            throw TravelAppError.authenticationFailed
+        }
         
         // Format dates for the backend - use ISO 8601 format
         let dateFormatter = ISO8601DateFormatter()
@@ -40,7 +53,8 @@ class TripService: ObservableObject {
         
         print("Submitting enhanced trip data: \(requestData)")
         
-        // Create the HTTP request - use the correct v2 function URL
+        // Create the HTTP request - V2 function will have Cloud Run URL
+        // You'll need to get the actual URL after deployment
         guard let url = URL(string: "https://submittrip-z7ztkcre7q-uc.a.run.app") else {
             throw TravelAppError.networkError("Invalid URL")
         }
@@ -83,10 +97,14 @@ class TripService: ObservableObject {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Bad Request"
                 print("Bad Request Error: \(errorMessage)")
                 throw TravelAppError.submissionFailed("Invalid request: \(errorMessage)")
+            } else if httpResponse.statusCode == 401 {
+                print("❌ 401 Unauthorized - Token might be invalid")
+                throw TravelAppError.authenticationFailed
+            } else if httpResponse.statusCode == 403 {
+                print("❌ 403 Forbidden - Token valid but access denied")
+                throw TravelAppError.authenticationFailed
             } else if httpResponse.statusCode == 429 {
                 throw TravelAppError.submissionFailed("Daily submission limit reached")
-            } else if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                throw TravelAppError.authenticationFailed
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
                 throw TravelAppError.submissionFailed(errorMessage)
@@ -123,8 +141,8 @@ class TripService: ObservableObject {
         
         print("Submitting trip data: \(requestData)")
         
-        // Create the HTTP request - use the correct v2 function URL
-        guard let url = URL(string: "https://submittrip-z7ztkcre7q-uc.a.run.app") else {
+        // Create the HTTP request - use v1 function URL
+        guard let url = URL(string: "https://us-central1-travel-consulting-app-1.cloudfunctions.net/submitTrip") else {
             throw TravelAppError.networkError("Invalid URL")
         }
         
@@ -166,10 +184,14 @@ class TripService: ObservableObject {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Bad Request"
                 print("Bad Request Error: \(errorMessage)")
                 throw TravelAppError.submissionFailed("Invalid request: \(errorMessage)")
+            } else if httpResponse.statusCode == 401 {
+                print("❌ 401 Unauthorized - Token might be invalid")
+                throw TravelAppError.authenticationFailed
+            } else if httpResponse.statusCode == 403 {
+                print("❌ 403 Forbidden - Token valid but access denied")
+                throw TravelAppError.authenticationFailed
             } else if httpResponse.statusCode == 429 {
                 throw TravelAppError.submissionFailed("Daily submission limit reached")
-            } else if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                throw TravelAppError.authenticationFailed
             } else {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
                 throw TravelAppError.submissionFailed(errorMessage)
