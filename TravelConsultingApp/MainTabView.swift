@@ -1,10 +1,3 @@
-//
-//  MainTabView.swift
-//  TravelConsultingApp
-//
-//  Created by Nick Christus on 6/6/25.
-//
-
 import SwiftUI
 
 struct MainTabView: View {
@@ -35,6 +28,7 @@ struct MainTabView: View {
 
 struct ProfileView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @State private var showingPointsView = false
     
     var body: some View {
         NavigationView {
@@ -48,6 +42,22 @@ struct ProfileView: View {
                         .foregroundColor(.secondary)
                 }
                 
+                // Points Management Button
+                Button(action: {
+                    showingPointsView = true
+                }) {
+                    HStack {
+                        Image(systemName: "creditcard")
+                        Text("Manage Points & Miles")
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
                 Spacer()
                 
                 Button("Sign Out") {
@@ -60,6 +70,9 @@ struct ProfileView: View {
             }
             .padding()
             .navigationTitle("Profile")
+            .sheet(isPresented: $showingPointsView) {
+                PointsManagementView()
+            }
         }
     }
 }

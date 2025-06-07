@@ -1,7 +1,62 @@
 import Foundation
 import FirebaseFirestore
 
-// MARK: - Trip Submission Model
+// MARK: - Enhanced Trip Submission Model
+struct EnhancedTripSubmission: Codable {
+    let destination: String
+    let startDate: Date
+    let endDate: Date
+    let paymentMethod: String
+    let flexibleDates: Bool
+    let tripDuration: Int? // For flexible dates
+    
+    // Preference fields
+    let budget: String?
+    let travelStyle: String
+    let groupSize: Int
+    let specialRequests: String
+    let interests: [String]
+    
+    enum CodingKeys: String, CodingKey {
+        case destination, startDate, endDate, paymentMethod, flexibleDates, tripDuration
+        case budget, travelStyle, groupSize, specialRequests, interests
+    }
+}
+
+// MARK: - User Points Profile
+struct UserPointsProfile: Codable {
+    let userId: String
+    var creditCardPoints: [String: Int] // "Amex": 50000, "Chase": 75000
+    var hotelPoints: [String: Int] // "Hyatt": 25000, "Hilton": 40000
+    var airlinePoints: [String: Int] // "United": 30000, "Delta": 15000
+    var lastUpdated: Timestamp
+    
+    enum CodingKeys: String, CodingKey {
+        case userId, creditCardPoints, hotelPoints, airlinePoints, lastUpdated
+    }
+}
+
+enum PointsType: String, CaseIterable {
+    case creditCard = "credit_card"
+    case hotel = "hotel"
+    case airline = "airline"
+    
+    var displayName: String {
+        switch self {
+        case .creditCard: return "Credit Card"
+        case .hotel: return "Hotel"
+        case .airline: return "Airline"
+        }
+    }
+}
+
+struct PointsProvider {
+    static let creditCardProviders = ["American Express", "Chase", "Capital One", "Citi", "Bank of America", "Wells Fargo"]
+    static let hotelProviders = ["Hyatt", "Marriott", "Hilton", "IHG", "Wyndham", "Choice Hotels"]
+    static let airlineProviders = ["United", "Delta", "American", "Southwest", "JetBlue", "Alaska"]
+}
+
+// Keep the old one for backward compatibility
 struct TripSubmission: Codable {
     let destination: String
     let startDate: Date
@@ -47,33 +102,33 @@ struct TravelTrip: Identifiable, Codable {
 }
 
 enum TripStatusType: String, Codable, CaseIterable {
-    case submitted = "submitted"
-    case processing = "processing"
-    case completed = "completed"
-    case failed = "failed"
+    case pending = "pending"      // Waiting for your manual planning
+    case inProgress = "in_progress"  // You're working on it
+    case completed = "completed"   // You've finished the itinerary
+    case cancelled = "cancelled"   // Trip was cancelled
     
     var displayText: String {
         switch self {
-        case .submitted:
-            return "Submitted"
-        case .processing:
-            return "Processing"
+        case .pending:
+            return "Pending Review"
+        case .inProgress:
+            return "Planning in Progress"
         case .completed:
-            return "Completed"
-        case .failed:
-            return "Failed"
+            return "Itinerary Ready"
+        case .cancelled:
+            return "Cancelled"
         }
     }
     
     var color: String {
         switch self {
-        case .submitted:
-            return "blue"
-        case .processing:
+        case .pending:
             return "orange"
+        case .inProgress:
+            return "blue"
         case .completed:
             return "green"
-        case .failed:
+        case .cancelled:
             return "red"
         }
     }

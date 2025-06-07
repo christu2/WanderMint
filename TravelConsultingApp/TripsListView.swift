@@ -98,13 +98,13 @@ struct StatusBadge: View {
     
     private func backgroundColorForStatus(_ status: TripStatusType) -> Color {
         switch status {
-        case .submitted:
-            return .blue
-        case .processing:
+        case .pending:
             return .orange
+        case .inProgress:
+            return .blue
         case .completed:
             return .green
-        case .failed:
+        case .cancelled:
             return .red
         }
     }

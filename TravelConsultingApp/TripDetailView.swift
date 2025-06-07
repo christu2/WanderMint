@@ -38,10 +38,12 @@ struct TripDetailView: View {
                 // Recommendation Section
                 if let recommendation = trip.recommendation {
                     RecommendationView(recommendation: recommendation)
-                } else if trip.status == .processing {
-                    ProcessingView()
-                } else if trip.status == .failed {
-                    FailedView()
+                } else if trip.status == .pending {
+                    PendingReviewView()
+                } else if trip.status == .inProgress {
+                    InProgressView()
+                } else if trip.status == .cancelled {
+                    CancelledView()
                 }
                 
                 Spacer()
@@ -349,6 +351,62 @@ struct TransportationView: View {
             return "0"
         }
         return String(format: "%.0f", max(0, cost))
+    }
+}
+
+struct PendingReviewView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "clock.badge.questionmark")
+                .font(.system(size: 40))
+                .foregroundColor(.orange)
+            Text("Pending Review")
+                .font(.headline)
+            Text("Your trip request has been received and is being reviewed. I'll personally research and plan your perfect itinerary!")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+
+struct InProgressView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Planning Your Trip")
+                .font(.headline)
+            Text("I'm currently researching and creating your personalized itinerary. This includes finding the best flights, accommodations, and activities based on your preferences.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(Color.blue.opacity(0.1))
+        .cornerRadius(12)
+    }
+}
+
+struct CancelledView: View {
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "xmark.circle")
+                .font(.system(size: 40))
+                .foregroundColor(.red)
+            Text("Trip Cancelled")
+                .font(.headline)
+            Text("This trip request has been cancelled. If you have any questions, please contact support.")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .padding()
+        .background(Color.red.opacity(0.1))
+        .cornerRadius(12)
     }
 }
 
