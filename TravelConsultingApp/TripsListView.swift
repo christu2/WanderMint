@@ -7,20 +7,26 @@ struct TripsListView: View {
         NavigationView {
             Group {
                 if viewModel.isLoading {
-                    ProgressView("Loading trips...")
+                    LoadingView(message: "Loading your trips...")
+                } else if viewModel.errorMessage != nil {
+                    ErrorView(
+                        title: "Unable to Load Trips",
+                        message: viewModel.errorMessage ?? "Unknown error occurred",
+                        retryAction: {
+                            viewModel.loadTrips()
+                        }
+                    )
                 } else if viewModel.trips.isEmpty {
-                    VStack(spacing: 20) {
-                        Image(systemName: "airplane.circle")
-                            .font(.system(size: 60))
-                            .foregroundColor(.gray)
-                        Text("No trips yet")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        Text("Submit your first trip request to get started!")
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding()
+                    EmptyStateView(
+                        icon: "airplane.departure",
+                        title: "Ready for Adventure?",
+                        subtitle: "Start planning your next amazing trip! Tell us where you want to go and we'll create the perfect itinerary just for you.",
+                        actionTitle: "Plan My First Trip",
+                        action: {
+                            // This would switch to the submission tab
+                            // You can implement tab switching here
+                        }
+                    )
                 } else {
                     List(viewModel.trips) { trip in
                         NavigationLink(destination: TripDetailView(trip: trip)) {
@@ -51,29 +57,48 @@ struct TripRowView: View {
     let trip: TravelTrip
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text(trip.destination)
-                    .font(.headline)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(trip.displayDestinations)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                    
+                    Text(dateRangeText)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
                 Spacer()
+                
                 StatusBadge(status: trip.status)
             }
             
-            Text("\(trip.startDateFormatted, formatter: dateFormatter) - \(trip.endDateFormatted, formatter: dateFormatter)")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Text("Submitted \(trip.createdAtFormatted, formatter: relativeDateFormatter)")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            HStack {
+                Label(groupSizeText, systemImage: "person.2.fill")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Text("Created \(trip.createdAtFormatted, formatter: relativeDateFormatter)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 12) // Increased from 4 to 12 for better touch target
+        .contentShape(Rectangle()) // Better tap target
     }
     
-    private var dateFormatter: DateFormatter {
+    private var dateRangeText: String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
-        return formatter
+        return "\(formatter.string(from: trip.startDateFormatted)) - \(formatter.string(from: trip.endDateFormatted))"
+    }
+    
+    private var groupSizeText: String {
+        let size = trip.groupSize ?? 1
+        return "\(size) \(size == 1 ? "person" : "people")"
     }
     
     private var relativeDateFormatter: RelativeDateTimeFormatter {
@@ -83,32 +108,6 @@ struct TripRowView: View {
     }
 }
 
-struct StatusBadge: View {
-    let status: TripStatusType
-    
-    var body: some View {
-        Text(status.displayText)
-            .font(.caption)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(backgroundColorForStatus(status))
-            .foregroundColor(.white)
-            .cornerRadius(8)
-    }
-    
-    private func backgroundColorForStatus(_ status: TripStatusType) -> Color {
-        switch status {
-        case .pending:
-            return .orange
-        case .inProgress:
-            return .blue
-        case .completed:
-            return .green
-        case .cancelled:
-            return .red
-        }
-    }
-}
 
 // MARK: - ViewModel
 @MainActor

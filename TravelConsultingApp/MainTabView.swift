@@ -43,18 +43,13 @@ struct ProfileView: View {
                 }
                 
                 // Points Management Button
-                Button(action: {
+                PrimaryButton(
+                    title: "Manage Points & Miles",
+                    icon: "creditcard",
+                    isLoading: false,
+                    isEnabled: true
+                ) {
                     showingPointsView = true
-                }) {
-                    HStack {
-                        Image(systemName: "creditcard")
-                        Text("Manage Points & Miles")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
                 }
                 .padding(.horizontal)
                 
@@ -64,6 +59,7 @@ struct ProfileView: View {
                     authViewModel.signOut()
                 }
                 .foregroundColor(.red)
+                .frame(minHeight: 44) // Better touch target
                 .padding()
                 .background(Color.red.opacity(0.1))
                 .cornerRadius(8)

@@ -39,16 +39,22 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0121699D2D7E718B00392E09 /* TravelConsultingApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = TravelConsultingApp;
 			sourceTree = "<group>";
 		};
 		012169AE2D7E718D00392E09 /* TravelConsultingAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = TravelConsultingAppTests;
 			sourceTree = "<group>";
 		};
 		012169B82D7E718D00392E09 /* TravelConsultingAppUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = TravelConsultingAppUITests;
 			sourceTree = "<group>";
 		};
@@ -130,7 +136,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 012169C22D7E718D00392E09 /* Build configuration list for PBXNativeTarget "TravelConsultingAppTests" */;
 			buildPhases = (
-				4D2C03860B315AE7CA65784A /* [CP] Check Pods Manifest.lock */,
 				012169A72D7E718D00392E09 /* Sources */,
 				012169A82D7E718D00392E09 /* Frameworks */,
 				012169A92D7E718D00392E09 /* Resources */,
@@ -152,11 +157,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 012169C52D7E718D00392E09 /* Build configuration list for PBXNativeTarget "TravelConsultingAppUITests" */;
 			buildPhases = (
-				AC28425ADEDC16F75838B776 /* [CP] Check Pods Manifest.lock */,
 				012169B12D7E718D00392E09 /* Sources */,
 				012169B22D7E718D00392E09 /* Frameworks */,
 				012169B32D7E718D00392E09 /* Resources */,
-				A780A9F3DD553E58E52CECBA /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -241,74 +244,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		4D2C03860B315AE7CA65784A /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-TravelConsultingAppTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A780A9F3DD553E58E52CECBA /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-TravelConsultingApp-TravelConsultingAppUITests/Pods-TravelConsultingApp-TravelConsultingAppUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-TravelConsultingApp-TravelConsultingAppUITests/Pods-TravelConsultingApp-TravelConsultingAppUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-TravelConsultingApp-TravelConsultingAppUITests/Pods-TravelConsultingApp-TravelConsultingAppUITests-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		AC28425ADEDC16F75838B776 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-TravelConsultingApp-TravelConsultingAppUITests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		012169972D7E718B00392E09 /* Sources */ = {

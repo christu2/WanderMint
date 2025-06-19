@@ -16,89 +16,150 @@ struct PointsManagementView: View {
     
     var body: some View {
         NavigationView {
-            Form {
-                Section(header: Text("Add Points")) {
-                    Picker("Points Type", selection: $selectedType) {
-                        ForEach(PointsType.allCases, id: \.self) { type in
-                            Text(type.displayName).tag(type)
+            Group {
+                if viewModel.isLoading {
+                    LoadingView(message: "Loading your points...")
+                } else if viewModel.errorMessage != nil {
+                    ErrorView(
+                        title: "Unable to Load Points",
+                        message: viewModel.errorMessage ?? "Unknown error occurred",
+                        retryAction: {
+                            viewModel.clearError()
+                            viewModel.loadPoints()
                         }
+                    )
+                } else if viewModel.hasNoPoints {
+                    VStack {
+                        EmptyStateView(
+                            icon: "creditcard.and.123",
+                            title: "Track Your Points",
+                            subtitle: "Add your credit card, hotel, and airline points to help us find the best deals for your trips.",
+                            actionTitle: nil,
+                            action: nil
+                        )
+                        Spacer()
+                        addPointsSection
                     }
-                    .pickerStyle(SegmentedPickerStyle())
-                    
-                    Picker("Provider", selection: $selectedProvider) {
-                        Text("Select Provider").tag("")
-                        ForEach(providersForType(selectedType), id: \.self) { provider in
-                            Text(provider).tag(provider)
-                        }
-                    }
-                    
-                    TextField("Points Amount", text: $pointsAmount)
-                        .keyboardType(.numberPad)
-                    
-                    Button("Add Points") {
-                        addPoints()
-                    }
-                    .disabled(selectedProvider.isEmpty || pointsAmount.isEmpty)
-                }
-                
-                if !viewModel.creditCardPoints.isEmpty {
-                    Section(header: Text("Credit Card Points")) {
-                        ForEach(Array(viewModel.creditCardPoints.keys.sorted()), id: \.self) { provider in
-                            HStack {
-                                Text(provider)
-                                Spacer()
-                                Text("\(viewModel.creditCardPoints[provider] ?? 0) pts")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .onDelete { indexSet in
-                            deletePoints(from: .creditCard, at: indexSet)
-                        }
-                    }
-                }
-                
-                if !viewModel.hotelPoints.isEmpty {
-                    Section(header: Text("Hotel Points")) {
-                        ForEach(Array(viewModel.hotelPoints.keys.sorted()), id: \.self) { provider in
-                            HStack {
-                                Text(provider)
-                                Spacer()
-                                Text("\(viewModel.hotelPoints[provider] ?? 0) pts")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .onDelete { indexSet in
-                            deletePoints(from: .hotel, at: indexSet)
-                        }
-                    }
-                }
-                
-                if !viewModel.airlinePoints.isEmpty {
-                    Section(header: Text("Airline Points")) {
-                        ForEach(Array(viewModel.airlinePoints.keys.sorted()), id: \.self) { provider in
-                            HStack {
-                                Text(provider)
-                                Spacer()
-                                Text("\(viewModel.airlinePoints[provider] ?? 0) pts")
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .onDelete { indexSet in
-                            deletePoints(from: .airline, at: indexSet)
-                        }
-                    }
+                } else {
+                    pointsForm
                 }
             }
             .navigationTitle("My Points")
             .onAppear {
                 viewModel.loadPoints()
             }
-            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-                Button("OK") {
-                    viewModel.clearError()
+        }
+    }
+    
+    private var addPointsSection: some View {
+        VStack(spacing: 16) {
+            Picker("Points Type", selection: $selectedType) {
+                ForEach(PointsType.allCases, id: \.self) { type in
+                    Text(type.displayName).tag(type)
                 }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
+            }
+            .pickerStyle(.segmented)
+            
+            Picker("Provider", selection: $selectedProvider) {
+                Text("Select Provider").tag("")
+                ForEach(providersForType(selectedType), id: \.self) { provider in
+                    Text(provider).tag(provider)
+                }
+            }
+            
+            TextField("Points Amount", text: $pointsAmount)
+                .keyboardType(.numberPad)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            
+            PrimaryButton(
+                title: "Add Points",
+                icon: "plus.circle.fill",
+                isLoading: false,
+                isEnabled: !selectedProvider.isEmpty && !pointsAmount.isEmpty
+            ) {
+                addPoints()
+            }
+        }
+        .padding()
+    }
+    
+    private var pointsForm: some View {
+        Form {
+            Section(header: Text("Add Points")) {
+                Picker("Points Type", selection: $selectedType) {
+                    ForEach(PointsType.allCases, id: \.self) { type in
+                        Text(type.displayName).tag(type)
+                    }
+                }
+                .pickerStyle(.segmented)
+                
+                Picker("Provider", selection: $selectedProvider) {
+                    Text("Select Provider").tag("")
+                    ForEach(providersForType(selectedType), id: \.self) { provider in
+                        Text(provider).tag(provider)
+                    }
+                }
+                
+                TextField("Points Amount", text: $pointsAmount)
+                    .keyboardType(.numberPad)
+                
+                PrimaryButton(
+                    title: "Add Points",
+                    icon: "plus.circle.fill",
+                    isLoading: false,
+                    isEnabled: !selectedProvider.isEmpty && !pointsAmount.isEmpty
+                ) {
+                    addPoints()
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            
+            if !viewModel.creditCardPoints.isEmpty {
+                Section(header: Text("Credit Card Points")) {
+                    ForEach(Array(viewModel.creditCardPoints.keys.sorted()), id: \.self) { provider in
+                        HStack {
+                            Text(provider)
+                            Spacer()
+                            Text("\(viewModel.creditCardPoints[provider] ?? 0) pts")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        deletePoints(from: .creditCard, at: indexSet)
+                    }
+                }
+            }
+            
+            if !viewModel.hotelPoints.isEmpty {
+                Section(header: Text("Hotel Points")) {
+                    ForEach(Array(viewModel.hotelPoints.keys.sorted()), id: \.self) { provider in
+                        HStack {
+                            Text(provider)
+                            Spacer()
+                            Text("\(viewModel.hotelPoints[provider] ?? 0) pts")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        deletePoints(from: .hotel, at: indexSet)
+                    }
+                }
+            }
+            
+            if !viewModel.airlinePoints.isEmpty {
+                Section(header: Text("Airline Points")) {
+                    ForEach(Array(viewModel.airlinePoints.keys.sorted()), id: \.self) { provider in
+                        HStack {
+                            Text(provider)
+                            Spacer()
+                            Text("\(viewModel.airlinePoints[provider] ?? 0) pts")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .onDelete { indexSet in
+                        deletePoints(from: .airline, at: indexSet)
+                    }
+                }
             }
         }
     }
@@ -156,6 +217,10 @@ class PointsManagementViewModel: ObservableObject {
     @Published var errorMessage: String?
     
     private let pointsService = PointsService()
+    
+    var hasNoPoints: Bool {
+        return creditCardPoints.isEmpty && hotelPoints.isEmpty && airlinePoints.isEmpty && !isLoading && errorMessage == nil
+    }
     
     func loadPoints() {
         isLoading = true
