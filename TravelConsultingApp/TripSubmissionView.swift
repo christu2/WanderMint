@@ -9,14 +9,19 @@ struct InterestButton: View {
     var body: some View {
         Button(action: action) {
             Text(interest)
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12) // Increased for better touch target
+                .frame(minHeight: 44) // Accessibility touch target
                 .background(isSelected ? Color.blue : Color.gray.opacity(0.2))
                 .foregroundColor(isSelected ? .white : .primary)
-                .cornerRadius(8)
+                .cornerRadius(12)
         }
-        .buttonStyle(PlainButtonStyle()) // This fixes the selection issue
+        .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(interest)
+        .accessibilityHint(isSelected ? "Selected. Double tap to deselect" : "Not selected. Double tap to select")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
@@ -26,7 +31,6 @@ struct TripSubmissionView: View {
     @State private var destination = ""
     @State private var startDate = Date()
     @State private var endDate = Date().addingTimeInterval(7 * 24 * 60 * 60) // 7 days from now
-    @State private var paymentMethod = "Credit Card"
     @State private var flexibleDates = false
     
     // Flexible dates fields
@@ -41,7 +45,6 @@ struct TripSubmissionView: View {
     @State private var specialRequests = ""
     @State private var selectedInterests: Set<String> = []
     
-    let paymentMethods = ["Credit Card", "Debit Card", "PayPal", "Bank Transfer"]
     let travelStyles = ["Budget", "Comfortable", "Luxury", "Adventure", "Relaxation"]
     let interests = ["Culture", "Food", "Nature", "History", "Nightlife", "Shopping", "Adventure Sports", "Art", "Music", "Architecture"]
     
@@ -60,9 +63,17 @@ struct TripSubmissionView: View {
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                             
-                            DatePicker("Earliest I can start", selection: $earliestStartDate, in: Date()..., displayedComponents: .date)
+                            CustomDatePicker(
+                                title: "Earliest I can start",
+                                date: $earliestStartDate,
+                                minimumDate: Date()
+                            )
                             
-                            DatePicker("Latest I can start", selection: $latestStartDate, in: earliestStartDate..., displayedComponents: .date)
+                            CustomDatePicker(
+                                title: "Latest I can start",
+                                date: $latestStartDate,
+                                minimumDate: earliestStartDate
+                            )
                             
                             VStack(alignment: .leading) {
                                 Text("Trip Duration: \(tripDuration) days")
@@ -83,9 +94,17 @@ struct TripSubmissionView: View {
                             }
                         }
                     } else {
-                        DatePicker("Start Date", selection: $startDate, in: Date()..., displayedComponents: .date)
+                        CustomDatePicker(
+                            title: "Start Date",
+                            date: $startDate,
+                            minimumDate: Date()
+                        )
                         
-                        DatePicker("End Date", selection: $endDate, in: startDate..., displayedComponents: .date)
+                        CustomDatePicker(
+                            title: "End Date",
+                            date: $endDate,
+                            minimumDate: startDate
+                        )
                     }
                 }
                 
@@ -98,7 +117,7 @@ struct TripSubmissionView: View {
                             Text(style).tag(style)
                         }
                     }
-                    .pickerStyle(MenuPickerStyle())
+                    .pickerStyle(.menu)
                     
                     Stepper("Group Size: \(groupSize)", value: $groupSize, in: 1...20)
                 }
@@ -128,31 +147,36 @@ struct TripSubmissionView: View {
                         .lineLimit(3...6)
                 }
                 
-                Section(header: Text("Payment")) {
-                    Picker("Payment Method", selection: $paymentMethod) {
-                        ForEach(paymentMethods, id: \.self) { method in
-                            Text(method).tag(method)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                }
                 
                 Section {
-                    Button(action: submitTrip) {
-                        HStack {
-                            if viewModel.isLoading {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            }
-                            Text(viewModel.isLoading ? "Submitting..." : "Submit Trip Request")
-                        }
+                    PrimaryButton(
+                        title: "Submit Trip Request",
+                        icon: "paperplane.fill",
+                        isLoading: viewModel.isLoading,
+                        isEnabled: isFormValid
+                    ) {
+                        submitTrip()
                     }
-                    .disabled(!isFormValid || viewModel.isLoading)
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .navigationTitle("Plan My Trip")
+            .disabled(viewModel.isLoading) // Prevent form interaction while submitting
+            .overlay(
+                Group {
+                    if viewModel.isLoading {
+                        LoadingOverlay(message: "Creating your perfect trip...")
+                    }
+                }
+            )
             .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-                Button("OK") {
+                Button("Try Again") {
+                    viewModel.clearError()
+                    if isFormValid {
+                        submitTrip()
+                    }
+                }
+                Button("Cancel", role: .cancel) {
                     viewModel.clearError()
                 }
             } message: {
@@ -180,18 +204,20 @@ struct TripSubmissionView: View {
     }
     
     private func submitTrip() {
+        let dateFormatter = ISO8601DateFormatter()
+        
         let submission = EnhancedTripSubmission(
-            destination: destination.trimmingCharacters(in: .whitespacesAndNewlines),
-            startDate: flexibleDates ? earliestStartDate : startDate,
-            endDate: flexibleDates ? latestStartDate : endDate,
-            paymentMethod: paymentMethod,
+            destinations: [destination.trimmingCharacters(in: .whitespacesAndNewlines)],
+            startDate: dateFormatter.string(from: flexibleDates ? earliestStartDate : startDate),
+            endDate: dateFormatter.string(from: flexibleDates ? latestStartDate : endDate),
             flexibleDates: flexibleDates,
             tripDuration: flexibleDates ? tripDuration : nil,
             budget: budget.isEmpty ? nil : budget,
             travelStyle: travelStyle,
             groupSize: groupSize,
             specialRequests: specialRequests.trimmingCharacters(in: .whitespacesAndNewlines),
-            interests: Array(selectedInterests)
+            interests: Array(selectedInterests),
+            flightClass: nil
         )
         
         viewModel.submitTrip(submission)
@@ -201,7 +227,6 @@ struct TripSubmissionView: View {
         destination = ""
         startDate = Date()
         endDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
-        paymentMethod = "Credit Card"
         flexibleDates = false
         budget = ""
         travelStyle = "Comfortable"
@@ -244,6 +269,82 @@ class TripSubmissionViewModel: ObservableObject {
     
     func clearSuccess() {
         submissionSuccess = false
+    }
+}
+
+// MARK: - Custom Date Picker Component
+struct CustomDatePicker: View {
+    let title: String
+    @Binding var date: Date
+    let minimumDate: Date?
+    
+    @State private var showingDatePicker = false
+    @State private var tempDate: Date
+    
+    init(title: String, date: Binding<Date>, minimumDate: Date? = nil) {
+        self.title = title
+        self._date = date
+        self.minimumDate = minimumDate
+        self._tempDate = State(initialValue: date.wrappedValue)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button(action: {
+                tempDate = date
+                showingDatePicker = true
+            }) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(date.formatted(date: .abbreviated, time: .omitted))
+                            .font(.body)
+                            .foregroundColor(.primary)
+                    }
+                    Spacer()
+                    Image(systemName: "calendar")
+                        .foregroundColor(.blue)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color(.systemGray6))
+                .cornerRadius(8)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .sheet(isPresented: $showingDatePicker) {
+            NavigationView {
+                VStack {
+                    DatePicker(
+                        title,
+                        selection: $tempDate,
+                        in: (minimumDate ?? Date.distantPast)...,
+                        displayedComponents: .date
+                    )
+                    .datePickerStyle(.graphical)
+                    .padding()
+                }
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Button("Cancel") {
+                            showingDatePicker = false
+                        }
+                    }
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("OK") {
+                            date = tempDate
+                            showingDatePicker = false
+                        }
+                        .fontWeight(.semibold)
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+        }
     }
 }
 

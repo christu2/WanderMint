@@ -29,15 +29,11 @@ class TripService: ObservableObject {
             throw TravelAppError.authenticationFailed
         }
         
-        // Format dates for the backend - use ISO 8601 format
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+        // Prepare request data with enhanced structure
         var requestData: [String: Any] = [
-            "destination": submission.destination,
-            "startDate": dateFormatter.string(from: submission.startDate),
-            "endDate": dateFormatter.string(from: submission.endDate),
-            "paymentMethod": submission.paymentMethod,
+            "destinations": submission.destinations,
+            "startDate": submission.startDate,
+            "endDate": submission.endDate,
             "flexibleDates": submission.flexibleDates,
             "budget": submission.budget ?? "",
             "travelStyle": submission.travelStyle,
@@ -46,16 +42,19 @@ class TripService: ObservableObject {
             "interests": submission.interests
         ]
         
-        // Add trip duration for flexible dates
+        // Add optional fields
+        if let flightClass = submission.flightClass {
+            requestData["flightClass"] = flightClass
+        }
+        
         if let duration = submission.tripDuration {
             requestData["tripDuration"] = duration
         }
         
         print("Submitting enhanced trip data: \(requestData)")
         
-        // Create the HTTP request - V2 function will have Cloud Run URL
-        // You'll need to get the actual URL after deployment
-        guard let url = URL(string: "https://submittrip-z7ztkcre7q-uc.a.run.app") else {
+        // Use the updated Cloud Function URL
+        guard let url = URL(string: "https://us-central1-travel-consulting-app-1.cloudfunctions.net/submitTrip") else {
             throw TravelAppError.networkError("Invalid URL")
         }
         
@@ -65,9 +64,6 @@ class TripService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
-        
-        // Add debugging headers
-        print("Request headers: \(request.allHTTPHeaderFields ?? [:])")
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestData)
@@ -79,8 +75,6 @@ class TripService: ObservableObject {
         do {
             print("Sending HTTP request...")
             let (data, response) = try await URLSession.shared.data(for: request)
-            
-            print("Response received: \(response)")
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw TravelAppError.networkError("Invalid response")
@@ -95,13 +89,8 @@ class TripService: ObservableObject {
                 return
             } else if httpResponse.statusCode == 400 {
                 let errorMessage = String(data: data, encoding: .utf8) ?? "Bad Request"
-                print("Bad Request Error: \(errorMessage)")
                 throw TravelAppError.submissionFailed("Invalid request: \(errorMessage)")
             } else if httpResponse.statusCode == 401 {
-                print("❌ 401 Unauthorized - Token might be invalid")
-                throw TravelAppError.authenticationFailed
-            } else if httpResponse.statusCode == 403 {
-                print("❌ 403 Forbidden - Token valid but access denied")
                 throw TravelAppError.authenticationFailed
             } else if httpResponse.statusCode == 429 {
                 throw TravelAppError.submissionFailed("Daily submission limit reached")
@@ -117,7 +106,7 @@ class TripService: ObservableObject {
             }
         }
     }
-    
+
     // MARK: - Submit Trip (Legacy)
     func submitTrip(_ submission: TripSubmission) async throws {
         guard let user = Auth.auth().currentUser else {
@@ -135,9 +124,13 @@ class TripService: ObservableObject {
             "destination": submission.destination,
             "startDate": dateFormatter.string(from: submission.startDate),
             "endDate": dateFormatter.string(from: submission.endDate),
-            "paymentMethod": submission.paymentMethod,
             "flexibleDates": submission.flexibleDates
         ]
+        
+        // Add paymentMethod only if it exists (for backward compatibility)
+        if let paymentMethod = submission.paymentMethod {
+            requestData["paymentMethod"] = paymentMethod
+        }
         
         print("Submitting trip data: \(requestData)")
         
@@ -292,9 +285,6 @@ class TripService: ObservableObject {
     
     // MARK: - Helper Methods
     private func parseTrip(from data: [String: Any]) throws -> TravelTrip {
-        // Debug: Print the raw data structure
-        print("Parsing trip data: \(data)")
-        
         guard let id = data["id"] as? String else {
             throw TravelAppError.dataError("Missing trip ID")
         }
@@ -303,33 +293,33 @@ class TripService: ObservableObject {
             throw TravelAppError.dataError("Missing user ID")
         }
         
-        guard let destination = data["destination"] as? String else {
-            throw TravelAppError.dataError("Missing destination")
+        // Handle both old single destination and new multiple destinations
+        let destination = data["destination"] as? String
+        let destinations = data["destinations"] as? [String]
+        
+        // For backward compatibility, ensure we have at least one destination
+        if destination == nil && (destinations == nil || destinations!.isEmpty) {
+            throw TravelAppError.dataError("Missing destination(s)")
         }
         
-        guard let paymentMethod = data["paymentMethod"] as? String else {
-            throw TravelAppError.dataError("Missing payment method")
-        }
-        
+        let paymentMethod = data["paymentMethod"] as? String // Now optional
         let flexibleDates = data["flexibleDates"] as? Bool ?? false
         
-        // Parse status with fallback and backwards compatibility
+        // Parse status with backwards compatibility
         let statusString = data["status"] as? String ?? "pending"
         var status: TripStatusType
-        
-        // Handle backwards compatibility with old status values
         switch statusString {
         case "submitted":
-            status = .pending  // Convert old 'submitted' to new 'pending'
+            status = .pending
         case "processing":
-            status = .inProgress  // Convert old 'processing' to new 'inProgress'
+            status = .inProgress
         case "failed":
-            status = .cancelled  // Convert old 'failed' to new 'cancelled'
+            status = .cancelled
         default:
             status = TripStatusType(rawValue: statusString) ?? .pending
         }
         
-        // Parse timestamps with better error handling
+        // Parse timestamps (these should still be timestamps from Firestore)
         guard let startDate = data["startDate"] as? Timestamp else {
             throw TravelAppError.dataError("Missing or invalid start date")
         }
@@ -344,14 +334,22 @@ class TripService: ObservableObject {
         
         let updatedAt = data["updatedAt"] as? Timestamp
         
-        // Parse recommendation if it exists (optional)
+        // Parse new fields
+        let flightClass = data["flightClass"] as? String
+        let budget = data["budget"] as? String
+        let travelStyle = data["travelStyle"] as? String
+        let groupSize = data["groupSize"] as? Int
+        let interests = data["interests"] as? [String]
+        let specialRequests = data["specialRequests"] as? String
+        
+        // Parse recommendation if it exists
         let recommendation: Recommendation?
         if let recData = data["recommendation"] as? [String: Any] {
             do {
                 recommendation = try parseRecommendation(from: recData)
             } catch {
                 print("Warning: Failed to parse recommendation: \(error)")
-                recommendation = nil // Don't fail the whole trip if recommendation fails
+                recommendation = nil
             }
         } else {
             recommendation = nil
@@ -361,6 +359,7 @@ class TripService: ObservableObject {
             id: id,
             userId: userId,
             destination: destination,
+            destinations: destinations,
             startDate: startDate,
             endDate: endDate,
             paymentMethod: paymentMethod,
@@ -368,7 +367,13 @@ class TripService: ObservableObject {
             status: status,
             createdAt: createdAt,
             updatedAt: updatedAt,
-            recommendation: recommendation
+            recommendation: recommendation,
+            flightClass: flightClass,
+            budget: budget,
+            travelStyle: travelStyle,
+            groupSize: groupSize,
+            interests: interests,
+            specialRequests: specialRequests
         )
     }
     
@@ -438,6 +443,7 @@ class TripService: ObservableObject {
             id: id,
             destination: destination,
             overview: overview,
+            itinerary: nil, // Parse DetailedItinerary separately if needed
             activities: activities,
             accommodations: accommodations,
             transportation: transportation,
