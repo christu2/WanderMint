@@ -205,6 +205,149 @@ struct CostBreakdownView: View {
     }
 }
 
+struct EnhancedCostBreakdownView: View {
+    let itinerary: DetailedItinerary
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "dollarsign.circle")
+                    .foregroundColor(.green)
+                Text("Major Travel Costs")
+                    .font(.headline)
+                Spacer()
+            }
+            
+            VStack(spacing: 8) {
+                // Flight Costs - show both cash and points
+                if !itinerary.flights.allFlights.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Flights")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        ForEach(Array(itinerary.flights.allFlights.enumerated()), id: \.offset) { index, flight in
+                            HStack {
+                                Text("Flight \(index + 1)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                FlexibleCostView(cost: flight.cost, style: .primary)
+                                    .font(.subheadline)
+                            }
+                        }
+                        
+                        if itinerary.flights.allFlights.count > 1 {
+                            Divider()
+                                .padding(.horizontal)
+                            HStack {
+                                Text("Total Flights")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Spacer()
+                                FlexibleCostView(cost: itinerary.flights.totalFlightCost, style: .primary)
+                                    .font(.subheadline)
+                                    .fontWeight(.bold)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                Divider()
+                
+                // Accommodation Costs - show both cash and points
+                if !itinerary.accommodations.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Accommodations")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        ForEach(itinerary.accommodations) { accommodation in
+                            HStack {
+                                Text(accommodation.name)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                Spacer()
+                                FlexibleCostView(cost: accommodation.cost, style: .primary)
+                                    .font(.subheadline)
+                                Text("/night")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                // Major Transportation (trains, buses between cities)
+                if let majorTransportation = itinerary.majorTransportation, !majorTransportation.isEmpty {
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Transportation")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        ForEach(majorTransportation) { transport in
+                            HStack {
+                                Text("\(transport.method.displayName): \(transport.from) → \(transport.to)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                Spacer()
+                                FlexibleCostView(cost: transport.cost, style: .primary)
+                                    .font(.subheadline)
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                
+                // All Activities
+                let allActivities = itinerary.dailyPlans.flatMap { $0.activities }.filter { $0.cost.totalCashValue > 0 }
+                if !allActivities.isEmpty {
+                    Divider()
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Activities")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        
+                        ForEach(allActivities.prefix(10)) { activity in
+                            HStack {
+                                Text(activity.title)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(1)
+                                Spacer()
+                                FlexibleCostView(cost: activity.cost, style: .primary)
+                                    .font(.subheadline)
+                            }
+                        }
+                        
+                        if allActivities.count > 10 {
+                            Text("+ \(allActivities.count - 10) more activities")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .italic()
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .padding()
+        .background(Color.green.opacity(0.1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+        .cornerRadius(12)
+    }
+}
+
 struct CostRow: View {
     let label: String
     let amount: Double
@@ -563,8 +706,8 @@ struct DetailedItineraryView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // Flight Information
-            FlightItineraryView(flights: itinerary.flights)
+            // Unified Transportation (flights and trains chronologically)
+            UnifiedTransportationView(itinerary: itinerary)
             
             // Daily Plans
             if !itinerary.dailyPlans.isEmpty {
@@ -578,9 +721,202 @@ struct DetailedItineraryView: View {
             
             // Total Cost
             if itinerary.totalCost.totalEstimate > 0 {
-                CostBreakdownView(cost: itinerary.totalCost)
+                EnhancedCostBreakdownView(itinerary: itinerary)
             }
         }
+    }
+}
+
+struct UnifiedTransportationView: View {
+    let itinerary: DetailedItinerary
+    
+    private var allTransportation: [TransportationItem] {
+        var items: [TransportationItem] = []
+        
+        // Add all flights
+        for (index, flight) in itinerary.flights.allFlights.enumerated() {
+            let title = getFlightTitle(for: index, total: itinerary.flights.allFlights.count)
+            items.append(.flight(flight, title: title))
+        }
+        
+        // Add major transportation (trains, buses)
+        if let majorTransportation = itinerary.majorTransportation {
+            for transport in majorTransportation {
+                items.append(.localTransportation(transport))
+            }
+        }
+        
+        // Sort chronologically
+        return items.sorted { item1, item2 in
+            guard let date1 = item1.date, let date2 = item2.date else {
+                // If dates are missing, sort flights first, then by time string
+                switch (item1, item2) {
+                case (.flight, .localTransportation):
+                    return true
+                case (.localTransportation, .flight):
+                    return false
+                default:
+                    return item1.time < item2.time
+                }
+            }
+            return date1 < date2
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "airplane")
+                    .foregroundColor(.blue)
+                Text("Transportation")
+                    .font(.title2)
+                    .bold()
+                Spacer()
+            }
+            
+            ForEach(Array(allTransportation.enumerated()), id: \.offset) { index, item in
+                switch item {
+                case .flight(let flight, let title):
+                    FlightCardView(flight: flight, title: title)
+                case .localTransportation(let transport):
+                    UnifiedTransportationCardView(transport: transport)
+                }
+            }
+            
+            // Keep important booking information but remove total cost card
+            if !itinerary.flights.bookingDeadline.isEmpty || !itinerary.flights.bookingInstructions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    if !itinerary.flights.bookingDeadline.isEmpty {
+                        HStack {
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .foregroundColor(.orange)
+                            Text("Book by: \(itinerary.flights.bookingDeadline)")
+                                .font(.subheadline)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    if !itinerary.flights.bookingInstructions.isEmpty {
+                        Text(itinerary.flights.bookingInstructions)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+        }
+    }
+    
+    private func getFlightTitle(for index: Int, total: Int) -> String {
+        if total == 1 {
+            return "Flight"
+        } else if total == 2 {
+            return index == 0 ? "Outbound Flight" : "Return Flight"
+        } else {
+            return "Flight \(index + 1)"
+        }
+    }
+}
+
+struct UnifiedTransportationCardView: View {
+    let transport: LocalTransportation
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: transport.method.icon)
+                    .font(.title2)
+                    .foregroundColor(.orange)
+                Text(transport.method.displayName)
+                    .font(.headline)
+                    .bold()
+                    .foregroundColor(.orange)
+                Spacer()
+                if transport.cost.totalCashValue > 0 {
+                    FlexibleCostView(cost: transport.cost, style: .primary)
+                        .font(.subheadline)
+                        .bold()
+                }
+            }
+            
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("From")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(transport.from)
+                        .font(.title3)
+                        .bold()
+                    if !transport.time.isEmpty {
+                        Text(transport.time)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack {
+                    Image(systemName: transport.method.icon)
+                        .font(.title2)
+                        .foregroundColor(.orange)
+                    if !transport.duration.isEmpty {
+                        Text(transport.duration)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                
+                Spacer()
+                
+                VStack(alignment: .trailing) {
+                    Text("To")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(transport.to)
+                        .font(.title3)
+                        .bold()
+                }
+            }
+            
+            if !transport.instructions.isEmpty {
+                Text(transport.instructions)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
+            }
+            
+            if let bookingUrl = transport.bookingUrl, !bookingUrl.isEmpty {
+                Button(action: {
+                    if let url = URL(string: bookingUrl) {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    HStack {
+                        Image(systemName: "link")
+                        Text("Book Transportation")
+                        Spacer()
+                        Image(systemName: "arrow.up.right")
+                    }
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 12)
+                    .background(Color.orange)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+            }
+        }
+        .padding()
+        .background(
+            LinearGradient(
+                gradient: Gradient(colors: [Color.orange.opacity(0.8), Color.red.opacity(0.6)]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(12)
     }
 }
 
@@ -598,36 +934,44 @@ struct FlightItineraryView: View {
                 Spacer()
             }
             
-            FlightCardView(flight: flights.outbound, title: "Outbound Flight")
-            
-            if let returnFlight = flights.returnFlight {
-                FlightCardView(flight: returnFlight, title: "Return Flight")
+            ForEach(Array(flights.allFlights.enumerated()), id: \.offset) { index, flight in
+                let title = getFlightTitle(for: index, total: flights.allFlights.count)
+                FlightCardView(flight: flight, title: title)
             }
             
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Total Flight Cost:")
-                        .font(.headline)
-                    Spacer()
-                    FlexibleCostView(cost: flights.totalFlightCost, style: .green)
-                        .font(.headline)
+            // Keep important booking information but remove total cost card
+            if !flights.bookingDeadline.isEmpty || !flights.bookingInstructions.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    if !flights.bookingDeadline.isEmpty {
+                        HStack {
+                            Image(systemName: "calendar.badge.exclamationmark")
+                                .foregroundColor(.orange)
+                            Text("Book by: \(flights.bookingDeadline)")
+                                .font(.subheadline)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    if !flights.bookingInstructions.isEmpty {
+                        Text(flights.bookingInstructions)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
-                
-                if !flights.bookingDeadline.isEmpty {
-                    Text("Book by: \(flights.bookingDeadline)")
-                        .font(.subheadline)
-                        .foregroundColor(.orange)
-                }
-                
-                if !flights.bookingInstructions.isEmpty {
-                    Text(flights.bookingInstructions)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
+                .padding()
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
             }
-            .padding()
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
+        }
+    }
+    
+    private func getFlightTitle(for index: Int, total: Int) -> String {
+        if total == 1 {
+            return "Flight"
+        } else if total == 2 {
+            return index == 0 ? "Outbound Flight" : "Return Flight"
+        } else {
+            return "Flight \(index + 1)"
         }
     }
 }
@@ -635,6 +979,7 @@ struct FlightItineraryView: View {
 struct FlightCardView: View {
     let flight: FlightDetails
     let title: String
+    @State private var showDetails = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -644,16 +989,20 @@ struct FlightCardView: View {
             
             HStack {
                 VStack(alignment: .leading) {
-                    Text("\(flight.departure.airportCode)")
+                    Text(flight.departure.airportCode.isEmpty ? "DEP" : flight.departure.airportCode)
                         .font(.title2)
                         .bold()
                         .foregroundColor(.white)
-                    Text(flight.departure.city)
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                    Text("\(flight.departure.date) \(flight.departure.time)")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
+                    if !flight.departure.city.isEmpty {
+                        Text(flight.departure.city)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    if !flight.departure.date.isEmpty || !flight.departure.time.isEmpty {
+                        Text("\(flight.departure.date) \(flight.departure.time)".trimmingCharacters(in: .whitespaces))
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
                 
                 Spacer()
@@ -670,21 +1019,26 @@ struct FlightCardView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing) {
-                    Text("\(flight.arrival.airportCode)")
+                    Text(flight.arrival.airportCode.isEmpty ? "ARR" : flight.arrival.airportCode)
                         .font(.title2)
                         .bold()
                         .foregroundColor(.white)
-                    Text(flight.arrival.city)
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                    Text("\(flight.arrival.date) \(flight.arrival.time)")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
+                    if !flight.arrival.city.isEmpty {
+                        Text(flight.arrival.city)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    if !flight.arrival.date.isEmpty || !flight.arrival.time.isEmpty {
+                        Text("\(flight.arrival.date) \(flight.arrival.time)".trimmingCharacters(in: .whitespaces))
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
                 }
             }
             
             HStack {
-                Text("\(flight.airline) \(flight.flightNumber)")
+                let flightInfo = [flight.airline, flight.flightNumber].filter { !$0.isEmpty }.joined(separator: " ")
+                Text(flightInfo.isEmpty ? "Flight Details" : flightInfo)
                     .font(.subheadline)
                     .foregroundColor(.white)
                 Spacer()
@@ -700,6 +1054,250 @@ struct FlightCardView: View {
             )
         )
         .cornerRadius(12)
+        .onTapGesture {
+            showDetails = true
+        }
+        .sheet(isPresented: $showDetails) {
+            FlightDetailsSheet(flight: flight, title: title)
+        }
+    }
+}
+
+struct FlightDetailsSheet: View {
+    let flight: FlightDetails
+    let title: String
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Flight Header
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(title)
+                            .font(.largeTitle)
+                            .bold()
+                        
+                        let flightInfo = [flight.airline, flight.flightNumber].filter { !$0.isEmpty }.joined(separator: " ")
+                        if !flightInfo.isEmpty {
+                            Text(flightInfo)
+                                .font(.title2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // Flight Route
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Flight Route")
+                            .font(.headline)
+                        
+                        HStack {
+                            VStack(alignment: .leading) {
+                                Text("Departure")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(flight.departure.airportCode.isEmpty ? "DEP" : flight.departure.airportCode)
+                                    .font(.title2)
+                                    .bold()
+                                if !flight.departure.city.isEmpty {
+                                    Text(flight.departure.city)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                                if !flight.departure.date.isEmpty || !flight.departure.time.isEmpty {
+                                    Text("\(flight.departure.date) \(flight.departure.time)".trimmingCharacters(in: .whitespaces))
+                                        .font(.subheadline)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack {
+                                Image(systemName: "airplane")
+                                    .font(.title)
+                                    .foregroundColor(.blue)
+                                if !flight.duration.isEmpty {
+                                    Text(flight.duration)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            Spacer()
+                            
+                            VStack(alignment: .trailing) {
+                                Text("Arrival")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(flight.arrival.airportCode.isEmpty ? "ARR" : flight.arrival.airportCode)
+                                    .font(.title2)
+                                    .bold()
+                                if !flight.arrival.city.isEmpty {
+                                    Text(flight.arrival.city)
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                                if !flight.arrival.date.isEmpty || !flight.arrival.time.isEmpty {
+                                    Text("\(flight.arrival.date) \(flight.arrival.time)".trimmingCharacters(in: .whitespaces))
+                                        .font(.subheadline)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
+                    
+                    // Flight Details
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Flight Details")
+                            .font(.headline)
+                        
+                        if !flight.aircraft.isEmpty {
+                            DetailRowView(label: "Aircraft", value: flight.aircraft)
+                        }
+                        
+                        if !flight.bookingClass.isEmpty {
+                            DetailRowView(label: "Class", value: flight.bookingClass)
+                        }
+                        
+                        DetailRowView(label: "Cost", value: flight.cost.displayText)
+                        
+                        if let seatRec = flight.seatRecommendations, !seatRec.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Seat Recommendations")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Text(seatRec)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        if let notes = flight.notes, !notes.isEmpty {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Notes")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                Text(notes)
+                                    .font(.body)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(12)
+                    
+                    // Booking Information
+                    VStack(alignment: .leading, spacing: 16) {
+                        HStack {
+                            Image(systemName: "creditcard")
+                                .foregroundColor(.green)
+                            Text("How to Book")
+                                .font(.headline)
+                        }
+                        
+                        VStack(spacing: 12) {
+                            // Show specific booking instructions for this flight
+                            if let bookingInstructions = flight.bookingInstructions, !bookingInstructions.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Booking Instructions:")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                    Text(bookingInstructions)
+                                        .font(.body)
+                                        .foregroundColor(.secondary)
+                                }
+                                .padding()
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(8)
+                            }
+                            
+                            // Online booking button if URL is available
+                            if let bookingUrl = flight.bookingUrl, !bookingUrl.isEmpty {
+                                Button(action: {
+                                    if let url = URL(string: bookingUrl) {
+                                        UIApplication.shared.open(url)
+                                    }
+                                }) {
+                                    HStack {
+                                        Image(systemName: "safari")
+                                        Text("Book Online")
+                                        Spacer()
+                                        Text(flight.cost.displayText)
+                                            .fontWeight(.bold)
+                                        Image(systemName: "arrow.up.right")
+                                    }
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(10)
+                                }
+                            }
+                            
+                            // Alternative booking methods
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Alternative Booking Methods:")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                
+                                HStack {
+                                    Image(systemName: "phone")
+                                    Text("Call airline directly for potential phone-only deals")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                HStack {
+                                    Image(systemName: "building.2")
+                                    Text("Visit travel agent for complex itineraries")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            
+                            if flight.bookingUrl?.isEmpty ?? true && flight.bookingInstructions?.isEmpty ?? true {
+                                Text("💡 Contact your travel consultant for booking assistance")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color.green.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                    )
+                    .cornerRadius(12)
+                }
+                .padding()
+            }
+            .navigationTitle("Flight Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") { dismiss() })
+        }
+    }
+}
+
+struct DetailRowView: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .fontWeight(.medium)
+            Spacer()
+            Text(value)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -755,6 +1353,14 @@ struct DayPlanView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(day.activities) { activity in
                         DailyActivityView(activity: activity)
+                    }
+                }
+            }
+            
+            if !day.transportation.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(day.transportation) { transport in
+                        LocalTransportationView(transport: transport)
                     }
                 }
             }
@@ -838,6 +1444,91 @@ struct DailyActivityView: View {
     }
 }
 
+struct MajorTransportationView: View {
+    let transportation: [LocalTransportation]
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "tram")
+                    .foregroundColor(.blue)
+                Text("Transportation")
+                    .font(.title2)
+                    .bold()
+                Spacer()
+            }
+            
+            ForEach(transportation) { transport in
+                LocalTransportationView(transport: transport)
+            }
+        }
+    }
+}
+
+struct LocalTransportationView: View {
+    let transport: LocalTransportation
+    
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .center, spacing: 4) {
+                if !transport.time.isEmpty {
+                    Text(transport.time)
+                        .font(.caption2)
+                        .bold()
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.2))
+                        .cornerRadius(4)
+                }
+                
+                Image(systemName: transport.method.icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(.orange)
+            }
+            .frame(width: 60)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(transport.method.displayName): \(transport.from) → \(transport.to)")
+                    .font(.subheadline)
+                    .bold()
+                
+                if !transport.instructions.isEmpty {
+                    Text(transport.instructions)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(3)
+                }
+                
+                HStack {
+                    if !transport.duration.isEmpty {
+                        Label(transport.duration, systemImage: "clock")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    if transport.cost.totalCashValue > 0 {
+                        HStack(spacing: 4) {
+                            Image(systemName: transport.cost.paymentType.icon)
+                            Text(transport.cost.shortDisplayText)
+                        }
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                    }
+                    
+                    if let bookingUrl = transport.bookingUrl, !bookingUrl.isEmpty {
+                        Label("Booking Available", systemImage: "link")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.vertical, 8)
+    }
+}
+
 struct AccommodationDetailsView: View {
     let accommodations: [AccommodationDetails]
     
@@ -890,7 +1581,7 @@ struct AccommodationCardView: View {
                 Spacer()
                 Text("Check-out: \(accommodation.checkOut)")
                     .font(.caption)
-                Text("(\(accommodation.nights) nights)")
+                Text("(\(calculateNights(checkIn: accommodation.checkIn, checkOut: accommodation.checkOut, fallback: accommodation.nights)) nights)")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -925,6 +1616,21 @@ struct AccommodationCardView: View {
                 .stroke(Color.gray.opacity(0.2), lineWidth: 1)
         )
         .cornerRadius(8)
+    }
+    
+    private func calculateNights(checkIn: String, checkOut: String, fallback: Int) -> Int {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        
+        guard let checkInDate = dateFormatter.date(from: checkIn),
+              let checkOutDate = dateFormatter.date(from: checkOut) else {
+            // If we can't parse the dates, use the fallback
+            return max(1, fallback)
+        }
+        
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.day], from: checkInDate, to: checkOutDate)
+        return max(1, components.day ?? fallback)
     }
 }
 

@@ -439,11 +439,19 @@ class TripService: ObservableObject {
             )
         }
         
+        // Parse detailed itinerary if available
+        let detailedItinerary: DetailedItinerary?
+        if let itineraryData = data["itinerary"] as? [String: Any] {
+            detailedItinerary = try parseDetailedItinerary(from: itineraryData)
+        } else {
+            detailedItinerary = nil
+        }
+        
         return Recommendation(
             id: id,
             destination: destination,
             overview: overview,
-            itinerary: nil, // Parse DetailedItinerary separately if needed
+            itinerary: detailedItinerary,
             activities: activities,
             accommodations: accommodations,
             transportation: transportation,
@@ -553,6 +561,531 @@ class TripService: ObservableObject {
             localTransport: localTransport,
             miscellaneous: miscellaneous,
             currency: currency
+        )
+    }
+    
+    // MARK: - Detailed Itinerary Parsing
+    private func parseDetailedItinerary(from data: [String: Any]) throws -> DetailedItinerary {
+        guard let id = data["id"] as? String else {
+            throw TravelAppError.dataError("Missing detailed itinerary ID")
+        }
+        
+        // Parse flights
+        let flights: FlightItinerary
+        if let flightsData = data["flights"] as? [[String: Any]], !flightsData.isEmpty {
+            // Admin dashboard saves flights as an array of flight objects
+            // We need to parse them into our FlightItinerary structure
+            flights = try parseFlightItinerary(from: flightsData)
+        } else {
+            // Fallback empty flight itinerary
+            flights = FlightItinerary(
+                outbound: createEmptyFlightDetails(),
+                returnFlight: nil,
+                additionalFlights: nil,
+                totalFlightCost: FlexibleCost(cashOnly: 0),
+                bookingDeadline: "",
+                bookingInstructions: ""
+            )
+        }
+        
+        // Parse daily plans
+        let dailyPlans: [DailyPlan]
+        if let dailyPlansData = data["dailyPlans"] as? [[String: Any]] {
+            dailyPlans = try dailyPlansData.compactMap { dayData in
+                try parseDailyPlan(from: dayData)
+            }
+        } else {
+            dailyPlans = []
+        }
+        
+        // Parse accommodations  
+        let accommodations: [AccommodationDetails]
+        if let accommodationsData = data["accommodations"] as? [[String: Any]] {
+            accommodations = try accommodationsData.compactMap { accData in
+                try parseAccommodationDetails(from: accData)
+            }
+        } else {
+            accommodations = []
+        }
+        
+        // Parse total cost
+        let totalCost: CostBreakdown
+        if let costData = data["totalCost"] as? [String: Any] {
+            totalCost = try parseCostBreakdown(from: costData)
+        } else {
+            totalCost = CostBreakdown(
+                totalEstimate: 0,
+                flights: 0,
+                accommodation: 0,
+                activities: 0,
+                food: 0,
+                localTransport: 0,
+                miscellaneous: 0,
+                currency: "USD"
+            )
+        }
+        
+        // Parse booking instructions (optional)
+        let bookingInstructions = parseBookingInstructions(from: data["bookingInstructions"] as? [String: Any])
+        
+        // Parse major transportation (trains, buses, etc.)
+        let majorTransportation: [LocalTransportation]?
+        if let transportData = data["transportation"] as? [[String: Any]] {
+            majorTransportation = try transportData.compactMap { try parseLocalTransportation(from: $0) }
+        } else {
+            majorTransportation = nil
+        }
+        
+        // Parse emergency info (optional)
+        let emergencyInfo = parseEmergencyInfo(from: data["emergencyInfo"] as? [String: Any])
+        
+        return DetailedItinerary(
+            id: id,
+            flights: flights,
+            majorTransportation: majorTransportation,
+            dailyPlans: dailyPlans,
+            accommodations: accommodations,
+            totalCost: totalCost,
+            bookingInstructions: bookingInstructions,
+            emergencyInfo: emergencyInfo
+        )
+    }
+    
+    private func parseFlightItinerary(from flightsData: [[String: Any]]) throws -> FlightItinerary {
+        // Admin dashboard can have multiple flights (Flight 1, Flight 2, Flight 3)
+        // We'll treat the first as outbound, second as return, and rest as additional
+        var outboundFlight: FlightDetails?
+        var returnFlight: FlightDetails?
+        var additionalFlights: [FlightDetails] = []
+        var totalCost = FlexibleCost(cashOnly: 0)
+        var bookingInstructions = ""
+        
+        for (flightIndex, flightData) in flightsData.enumerated() {
+            // Each flight can have multiple segments, but we'll take the first segment for now
+            if let segments = flightData["segments"] as? [[String: Any]], 
+               let firstSegment = segments.first {
+                
+                // Pass the flight-level booking instructions to the segment
+                var segmentWithInstructions = firstSegment
+                if let instructions = flightData["bookingInstructions"] as? String {
+                    segmentWithInstructions["flightBookingInstructions"] = instructions
+                }
+                
+                let flightDetails = try parseFlightDetails(from: segmentWithInstructions)
+                
+                // Add this flight's cost to the total
+                totalCost = FlexibleCost(
+                    cashOnly: totalCost.cashAmount + flightDetails.cost.cashAmount
+                )
+                
+                if flightIndex == 0 {
+                    outboundFlight = flightDetails
+                } else if flightIndex == 1 {
+                    returnFlight = flightDetails
+                } else {
+                    // Flight 3, Flight 4, etc.
+                    additionalFlights.append(flightDetails)
+                }
+            }
+        }
+        
+        return FlightItinerary(
+            outbound: outboundFlight ?? createEmptyFlightDetails(),
+            returnFlight: returnFlight,
+            additionalFlights: additionalFlights.isEmpty ? nil : additionalFlights,
+            totalFlightCost: totalCost,
+            bookingDeadline: "",
+            bookingInstructions: bookingInstructions.trimmingCharacters(in: .whitespaces)
+        )
+    }
+    
+    private func parseFlightDetails(from data: [String: Any]) throws -> FlightDetails {
+        let flightNumber = data["flightNumber"] as? String ?? ""
+        let airline = data["airline"] as? String ?? ""
+        let duration = data["duration"] as? String ?? ""
+        
+        // Parse departure
+        let departure: FlightSegment
+        if let depData = data["departure"] as? [String: Any] {
+            departure = FlightSegment(
+                airport: depData["airport"] as? String ?? "",
+                airportCode: depData["airportCode"] as? String ?? "",
+                city: depData["city"] as? String ?? "",
+                date: depData["date"] as? String ?? "",
+                time: depData["time"] as? String ?? "",
+                terminal: depData["terminal"] as? String,
+                gate: depData["gate"] as? String
+            )
+        } else {
+            departure = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+        
+        // Parse arrival
+        let arrival: FlightSegment
+        if let arrData = data["arrival"] as? [String: Any] {
+            arrival = FlightSegment(
+                airport: arrData["airport"] as? String ?? "",
+                airportCode: arrData["airportCode"] as? String ?? "",
+                city: arrData["city"] as? String ?? "",
+                date: arrData["date"] as? String ?? "",
+                time: arrData["time"] as? String ?? "",
+                terminal: arrData["terminal"] as? String,
+                gate: arrData["gate"] as? String
+            )
+        } else {
+            arrival = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+        
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+        
+        return FlightDetails(
+            flightNumber: flightNumber,
+            airline: airline,
+            departure: departure,
+            arrival: arrival,
+            duration: duration,
+            aircraft: data["aircraft"] as? String ?? "",
+            cost: cost,
+            bookingClass: data["bookingClass"] as? String ?? "",
+            bookingUrl: data["bookingUrl"] as? String,
+            seatRecommendations: data["seatRecommendations"] as? String,
+            bookingInstructions: data["flightBookingInstructions"] as? String,
+            notes: data["notes"] as? String
+        )
+    }
+    
+    private func parseDailyPlan(from data: [String: Any]) throws -> DailyPlan {
+        guard let id = data["id"] as? String,
+              let dayNumber = data["dayNumber"] as? Int,
+              let date = data["date"] as? String,
+              let title = data["title"] as? String else {
+            throw TravelAppError.dataError("Invalid daily plan data structure")
+        }
+        
+        // Parse activities
+        let activities: [DailyActivity]
+        if let activitiesData = data["activities"] as? [[String: Any]] {
+            activities = try activitiesData.compactMap { activityData in
+                try parseDailyActivity(from: activityData)
+            }
+        } else {
+            activities = []
+        }
+        
+        // Parse estimated cost
+        let estimatedCost: FlexibleCost
+        if let costData = data["estimatedCost"] as? [String: Any] {
+            estimatedCost = try parseFlexibleCost(from: costData)
+        } else {
+            estimatedCost = FlexibleCost(cashOnly: 0)
+        }
+        
+        return DailyPlan(
+            id: id,
+            dayNumber: dayNumber,
+            date: date,
+            title: title,
+            activities: activities,
+            meals: [], // Not implemented in admin dashboard yet
+            transportation: [], // Not implemented in admin dashboard yet
+            estimatedCost: estimatedCost,
+            notes: data["notes"] as? String
+        )
+    }
+    
+    private func parseDailyActivity(from data: [String: Any]) throws -> DailyActivity {
+        guard let id = data["id"] as? String,
+              let time = data["time"] as? String,
+              let title = data["title"] as? String,
+              let description = data["description"] as? String else {
+            throw TravelAppError.dataError("Invalid daily activity data structure")
+        }
+        
+        // Parse location
+        let location: ActivityLocation
+        if let locationData = data["location"] as? [String: Any] {
+            location = ActivityLocation(
+                name: locationData["name"] as? String ?? "",
+                address: locationData["address"] as? String ?? "",
+                coordinates: nil, // Not implemented yet
+                nearbyLandmarks: locationData["nearbyLandmarks"] as? String
+            )
+        } else {
+            location = ActivityLocation(name: "", address: "", coordinates: nil, nearbyLandmarks: nil)
+        }
+        
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+        
+        // Parse category
+        let category: ActivityCategory
+        if let categoryString = data["category"] as? String,
+           let parsedCategory = ActivityCategory(rawValue: categoryString) {
+            category = parsedCategory
+        } else {
+            category = .sightseeing // Default
+        }
+        
+        return DailyActivity(
+            id: id,
+            time: time,
+            duration: data["duration"] as? String ?? "",
+            title: title,
+            description: description,
+            location: location,
+            cost: cost,
+            bookingRequired: data["bookingRequired"] as? Bool ?? false,
+            bookingUrl: data["bookingUrl"] as? String,
+            bookingInstructions: data["bookingInstructions"] as? String,
+            tips: data["tips"] as? [String] ?? [],
+            category: category
+        )
+    }
+    
+    private func parseAccommodationDetails(from data: [String: Any]) throws -> AccommodationDetails {
+        guard let id = data["id"] as? String,
+              let name = data["name"] as? String,
+              let checkIn = data["checkIn"] as? String,
+              let checkOut = data["checkOut"] as? String,
+              let nights = data["nights"] as? Int else {
+            throw TravelAppError.dataError("Invalid accommodation details data structure")
+        }
+        
+        // Parse type
+        let type: AccommodationType
+        if let typeString = data["type"] as? String,
+           let parsedType = AccommodationType(rawValue: typeString) {
+            type = parsedType
+        } else {
+            type = .hotel // Default
+        }
+        
+        // Parse location
+        let location: ActivityLocation
+        if let locationData = data["location"] as? [String: Any] {
+            location = ActivityLocation(
+                name: locationData["name"] as? String ?? "",
+                address: locationData["address"] as? String ?? "",
+                coordinates: nil,
+                nearbyLandmarks: locationData["nearbyLandmarks"] as? String
+            )
+        } else {
+            location = ActivityLocation(name: "", address: "", coordinates: nil, nearbyLandmarks: nil)
+        }
+        
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+        
+        // Parse contact info
+        let contactInfo: ContactInfo
+        if let contactData = data["contactInfo"] as? [String: Any] {
+            contactInfo = ContactInfo(
+                phone: contactData["phone"] as? String,
+                email: contactData["email"] as? String,
+                website: contactData["website"] as? String
+            )
+        } else {
+            contactInfo = ContactInfo(phone: nil, email: nil, website: nil)
+        }
+        
+        return AccommodationDetails(
+            id: id,
+            name: name,
+            type: type,
+            checkIn: checkIn,
+            checkOut: checkOut,
+            nights: nights,
+            location: location,
+            roomType: data["roomType"] as? String ?? "",
+            amenities: data["amenities"] as? [String] ?? [],
+            cost: cost,
+            bookingUrl: data["bookingUrl"] as? String,
+            bookingInstructions: data["bookingInstructions"] as? String ?? "",
+            cancellationPolicy: data["cancellationPolicy"] as? String ?? "",
+            contactInfo: contactInfo
+        )
+    }
+    
+    private func parseFlexibleCost(from data: [String: Any]) throws -> FlexibleCost {
+        let paymentType = PaymentType(rawValue: data["paymentType"] as? String ?? "cash") ?? .cash
+        let cashAmount = data["cashAmount"] as? Double ?? 0
+        let pointsAmount = data["pointsAmount"] as? Int
+        let pointsProgram = data["pointsProgram"] as? String
+        let totalCashValue = data["totalCashValue"] as? Double ?? cashAmount
+        let notes = data["notes"] as? String
+        
+        switch paymentType {
+        case .cash:
+            return FlexibleCost(cashOnly: cashAmount, notes: notes)
+        case .points:
+            return FlexibleCost(
+                pointsOnly: pointsAmount ?? 0,
+                program: pointsProgram ?? "",
+                cashValue: totalCashValue,
+                notes: notes
+            )
+        case .hybrid:
+            return FlexibleCost(
+                hybrid: cashAmount,
+                points: pointsAmount ?? 0,
+                program: pointsProgram ?? "",
+                notes: notes
+            )
+        }
+    }
+    
+    private func parseBookingInstructions(from data: [String: Any]?) -> BookingInstructions {
+        guard let data = data else {
+            return BookingInstructions(
+                overallInstructions: "",
+                flightBookingTips: [],
+                accommodationBookingTips: [],
+                activityBookingTips: [],
+                paymentMethods: [],
+                cancellationPolicies: "",
+                travelInsuranceRecommendation: nil
+            )
+        }
+        
+        return BookingInstructions(
+            overallInstructions: data["overallInstructions"] as? String ?? "",
+            flightBookingTips: data["flightBookingTips"] as? [String] ?? [],
+            accommodationBookingTips: data["accommodationBookingTips"] as? [String] ?? [],
+            activityBookingTips: data["activityBookingTips"] as? [String] ?? [],
+            paymentMethods: data["paymentMethods"] as? [String] ?? [],
+            cancellationPolicies: data["cancellationPolicies"] as? String ?? "",
+            travelInsuranceRecommendation: data["travelInsuranceRecommendation"] as? String
+        )
+    }
+    
+    private func parseEmergencyInfo(from data: [String: Any]?) -> EmergencyInfo {
+        guard let data = data else {
+            return EmergencyInfo(
+                emergencyContacts: [],
+                localEmergencyNumbers: [:],
+                nearestEmbassy: nil,
+                medicalFacilities: [],
+                importantPhrases: [:]
+            )
+        }
+        
+        return EmergencyInfo(
+            emergencyContacts: [], // Not implemented yet
+            localEmergencyNumbers: data["localEmergencyNumbers"] as? [String: String] ?? [:],
+            nearestEmbassy: nil, // Not implemented yet
+            medicalFacilities: [], // Not implemented yet
+            importantPhrases: data["importantPhrases"] as? [String: String] ?? [:]
+        )
+    }
+    
+    private func createEmptyFlightDetails() -> FlightDetails {
+        return FlightDetails(
+            flightNumber: "",
+            airline: "",
+            departure: FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil),
+            arrival: FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil),
+            duration: "",
+            aircraft: "",
+            cost: FlexibleCost(cashOnly: 0),
+            bookingClass: "",
+            bookingUrl: nil,
+            seatRecommendations: nil,
+            bookingInstructions: nil,
+            notes: nil
+        )
+    }
+    
+    private func parseLocalTransportation(from data: [String: Any]) throws -> LocalTransportation {
+        guard let id = data["id"] as? String else {
+            throw TravelAppError.dataError("Missing transportation id")
+        }
+        
+        // Admin dashboard uses different field names
+        let departureDate = data["departureDate"] as? String ?? ""
+        let departureTime = data["departureTime"] as? String ?? ""
+        let arrivalDate = data["arrivalDate"] as? String ?? ""
+        let arrivalTime = data["arrivalTime"] as? String ?? ""
+        
+        // Combine date and time for compatibility
+        let time: String
+        if !departureDate.isEmpty && !departureTime.isEmpty {
+            time = "\(departureDate) \(departureTime)"
+        } else if !departureTime.isEmpty {
+            time = departureTime
+        } else {
+            time = data["time"] as? String ?? ""
+        }
+        
+        let from = data["from"] as? String ?? ""
+        let to = data["to"] as? String ?? ""
+        
+        // Calculate duration from arrival/departure if available
+        let duration: String
+        if !arrivalDate.isEmpty && !arrivalTime.isEmpty && !departureDate.isEmpty && !departureTime.isEmpty {
+            // Could calculate duration here, but for now just use what's provided
+            duration = data["duration"] as? String ?? ""
+        } else {
+            duration = data["duration"] as? String ?? ""
+        }
+        
+        // Admin dashboard uses "bookingInstructions" and "notes" 
+        let instructions = data["bookingInstructions"] as? String ?? data["instructions"] as? String ?? ""
+        let bookingUrl = data["bookingUrl"] as? String
+        
+        // Parse transport method - admin dashboard uses "type" field
+        let methodString = data["type"] as? String ?? data["method"] as? String ?? "train"
+        let method: TransportMethod
+        switch methodString.lowercased() {
+        case "train":
+            method = .train
+        case "car_rental", "car", "rental":
+            method = .rental
+        case "ferry":
+            method = .bus // Use bus as closest match, or could add ferry to enum
+        case "bus":
+            method = .bus
+        case "taxi", "rideshare":
+            method = .taxi
+        case "metro", "subway":
+            method = .metro
+        default:
+            method = .train
+        }
+        
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+        
+        return LocalTransportation(
+            id: id,
+            time: time,
+            method: method,
+            from: from,
+            to: to,
+            duration: duration,
+            cost: cost,
+            instructions: instructions,
+            bookingUrl: bookingUrl
         )
     }
 }

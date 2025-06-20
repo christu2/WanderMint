@@ -96,11 +96,15 @@ struct TravelTrip: Identifiable, Codable {
     
     // Computed properties for easier date handling
     var startDateFormatted: Date {
-        return startDate.dateValue()
+        // Use timezone-safe date conversion to prevent day shifting
+        let date = startDate.dateValue()
+        return DateUtils.startOfDay(date)
     }
     
     var endDateFormatted: Date {
-        return endDate.dateValue()
+        // Use timezone-safe date conversion to prevent day shifting
+        let date = endDate.dateValue()
+        return DateUtils.startOfDay(date)
     }
     
     var createdAtFormatted: Date {
@@ -202,6 +206,7 @@ struct Recommendation: Identifiable, Codable {
 struct DetailedItinerary: Identifiable, Codable {
     let id: String
     let flights: FlightItinerary
+    let majorTransportation: [LocalTransportation]? // For trains, buses, etc. that span multiple days
     let dailyPlans: [DailyPlan]
     let accommodations: [AccommodationDetails]
     let totalCost: CostBreakdown
@@ -209,19 +214,32 @@ struct DetailedItinerary: Identifiable, Codable {
     let emergencyInfo: EmergencyInfo
     
     enum CodingKeys: String, CodingKey {
-        case id, flights, dailyPlans, accommodations, totalCost, bookingInstructions, emergencyInfo
+        case id, flights, majorTransportation, dailyPlans, accommodations, totalCost, bookingInstructions, emergencyInfo
     }
 }
 
 struct FlightItinerary: Codable {
     let outbound: FlightDetails
     let returnFlight: FlightDetails?
+    let additionalFlights: [FlightDetails]? // Support for Flight 2, Flight 3, etc.
     let totalFlightCost: FlexibleCost
     let bookingDeadline: String
     let bookingInstructions: String
     
     enum CodingKeys: String, CodingKey {
-        case outbound, returnFlight = "return", totalFlightCost, bookingDeadline, bookingInstructions
+        case outbound, returnFlight = "return", additionalFlights, totalFlightCost, bookingDeadline, bookingInstructions
+    }
+    
+    // Computed property to get all flights in order
+    var allFlights: [FlightDetails] {
+        var flights = [outbound]
+        if let returnFlight = returnFlight {
+            flights.append(returnFlight)
+        }
+        if let additionalFlights = additionalFlights {
+            flights.append(contentsOf: additionalFlights)
+        }
+        return flights
     }
 }
 
@@ -236,9 +254,11 @@ struct FlightDetails: Codable {
     let bookingClass: String
     let bookingUrl: String?
     let seatRecommendations: String?
+    let bookingInstructions: String?
+    let notes: String?
     
     enum CodingKeys: String, CodingKey {
-        case flightNumber, airline, departure, arrival, duration, aircraft, cost, bookingClass, bookingUrl, seatRecommendations
+        case flightNumber, airline, departure, arrival, duration, aircraft, cost, bookingClass, bookingUrl, seatRecommendations, bookingInstructions, notes
     }
 }
 
@@ -720,6 +740,54 @@ struct CostBreakdown: Codable {
     
     enum CodingKeys: String, CodingKey {
         case totalEstimate, flights, accommodation, activities, food, localTransport, miscellaneous, currency
+    }
+}
+
+// MARK: - Unified Transportation for Chronological Display
+enum TransportationItem {
+    case flight(FlightDetails, title: String)
+    case localTransportation(LocalTransportation)
+    
+    var date: Date? {
+        switch self {
+        case .flight(let flight, _):
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            return formatter.date(from: flight.departure.date)
+        case .localTransportation(let transport):
+            // Try to extract date from time string if it contains date info
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm"
+            if let date = formatter.date(from: transport.time) {
+                return date
+            }
+            // Fallback to just time parsing
+            formatter.dateFormat = "HH:mm"
+            if let timeOnly = formatter.date(from: transport.time) {
+                // Use a reference date for time-only comparisons
+                let calendar = Calendar.current
+                let today = Date()
+                let components = calendar.dateComponents([.year, .month, .day], from: today)
+                let timeComponents = calendar.dateComponents([.hour, .minute], from: timeOnly)
+                return calendar.date(from: DateComponents(
+                    year: components.year,
+                    month: components.month,
+                    day: components.day,
+                    hour: timeComponents.hour,
+                    minute: timeComponents.minute
+                ))
+            }
+            return nil
+        }
+    }
+    
+    var time: String {
+        switch self {
+        case .flight(let flight, _):
+            return flight.departure.time
+        case .localTransportation(let transport):
+            return transport.time
+        }
     }
 }
 
