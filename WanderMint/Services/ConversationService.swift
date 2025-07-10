@@ -143,7 +143,7 @@ class ConversationService: ObservableObject {
     
     /// Mark messages as read by user
     func markMessagesAsRead(conversationId: String) async throws {
-        guard let user = Auth.auth().currentUser else {
+        guard Auth.auth().currentUser != nil else {
             throw TravelAppError.authenticationFailed
         }
         

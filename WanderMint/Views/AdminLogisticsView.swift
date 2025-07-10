@@ -973,7 +973,7 @@ struct FlightDetailModal: View {
     let flightDetails: AdminFlightDetails
     let option: AdminTransportOption
     
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
@@ -1194,7 +1194,7 @@ struct FlightDetailModal: View {
             .navigationTitle("Flight Details")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button("Done") {
-                presentationMode.wrappedValue.dismiss()
+                dismiss()
             })
         }
     }

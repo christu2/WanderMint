@@ -19,7 +19,7 @@ class TripDataParser {
         let departureLocation = data["departureLocation"] as? String
         
         // For backward compatibility, ensure we have at least one destination
-        if destination == nil && (destinations == nil || destinations!.isEmpty) {
+        if destination == nil && (destinations?.isEmpty ?? true) {
             throw TravelAppError.dataError("Missing destination(s)")
         }
         
@@ -65,8 +65,7 @@ class TripDataParser {
                 let jsonData = try JSONSerialization.data(withJSONObject: sanitizedData)
                 
                 // Add detailed debugging
-                if let jsonString = String(data: jsonData, encoding: .utf8) {
-                }
+                _ = String(data: jsonData, encoding: .utf8)
                 
                 destinationRecommendation = try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: jsonData)
             } catch {

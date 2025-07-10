@@ -460,7 +460,7 @@ struct HotelDetailModal: View {
     let hotel: AdminHotel
     let option: AdminAccommodationOption
     
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
@@ -645,7 +645,7 @@ struct HotelDetailModal: View {
             .navigationTitle("Hotel Details")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing: Button("Done") {
-                presentationMode.wrappedValue.dismiss()
+                dismiss()
             })
         }
     }

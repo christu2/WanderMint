@@ -58,7 +58,7 @@ class AuthenticationViewModel: ObservableObject {
         
         Task {
             do {
-                let result = try await Auth.auth().signIn(withEmail: email, password: password)
+                _ = try await Auth.auth().signIn(withEmail: email, password: password)
             } catch {
                 self.errorMessage = error.localizedDescription
             }

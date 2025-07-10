@@ -310,7 +310,7 @@ struct SettingsRow: View {
 struct EditProfileView: View {
     @Binding var name: String
     let onSave: () -> Void
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         let nameField = TextField("Enter your name", text: $name)
@@ -332,7 +332,7 @@ struct EditProfileView: View {
         }
         
         let cancelButton = Button("Cancel") {
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         }
         
         let saveButton = Button("Save") {

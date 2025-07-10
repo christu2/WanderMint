@@ -203,7 +203,7 @@ struct FeedbackTemplateSheet: View {
                 TextField("Type your message here...", text: $customMessage, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(3...8)
-                    .onChange(of: customMessage) { _ in
+                    .onChange(of: customMessage) {
                         // Clear template selection if user types custom message
                         if !customMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && 
                            selectedTemplate != nil &&

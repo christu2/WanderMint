@@ -336,7 +336,7 @@ class TripService: ObservableObject {
         let departureLocation = data["departureLocation"] as? String
         
         // For backward compatibility, ensure we have at least one destination
-        if destination == nil && (destinations == nil || destinations!.isEmpty) {
+        if destination == nil && (destinations?.isEmpty ?? true) {
             throw TravelAppError.dataError("Missing destination(s)")
         }
         

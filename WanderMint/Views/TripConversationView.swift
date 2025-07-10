@@ -19,7 +19,7 @@ struct TripConversationView: View {
                 if isLoading {
                     ProgressView("Loading conversation...")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if let conversation = conversation {
+                } else if conversation != nil {
                     // Messages list
                     messagesListView
                     

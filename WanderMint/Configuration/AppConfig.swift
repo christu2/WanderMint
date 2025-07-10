@@ -67,16 +67,21 @@ extension AppConfig {
     }
     
     static var isTestFlight: Bool {
-        guard let path = Bundle.main.appStoreReceiptURL?.path else {
+        // Check if running in TestFlight environment
+        // TestFlight apps have a specific bundle identifier pattern or sandbox receipt
+        guard let receiptURL = Bundle.main.url(forResource: "receipt", withExtension: nil) else {
             return false
         }
-        return path.contains("sandboxReceipt")
+        return receiptURL.path.contains("sandboxReceipt")
     }
     
     static var isAppStore: Bool {
-        guard let path = Bundle.main.appStoreReceiptURL?.path else {
+        // Check if running in App Store environment
+        // App Store apps have a specific receipt structure
+        guard let receiptURL = Bundle.main.url(forResource: "receipt", withExtension: nil) else {
             return false
         }
+        let path = receiptURL.path
         return path.contains("receipt") && !path.contains("sandboxReceipt")
     }
 }

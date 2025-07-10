@@ -387,7 +387,10 @@ struct ProfileSetupView: View {
         
         let db = Firestore.firestore()
         let data = try JSONEncoder().encode(pointsProfile)
-        let dict = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        
+        guard let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw TravelAppError.dataError("Failed to serialize points profile")
+        }
         
         try await db.collection("userPoints").document(user.uid).setData(dict)
     }

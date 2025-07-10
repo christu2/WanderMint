@@ -1,5 +1,4 @@
 import SwiftUI
-import Foundation
 
 struct TripsListView: View {
     @StateObject private var viewModel = TripsListViewModel()

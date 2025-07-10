@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import Firebase
 
 struct AuthenticationView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
@@ -156,7 +157,7 @@ struct AuthenticationView: View {
 
 struct ResetPasswordView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @State private var email = ""
     @State private var showingSuccessAlert = false
     
@@ -214,13 +215,13 @@ struct ResetPasswordView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 }
             }
             .alert("Reset Link Sent", isPresented: $showingSuccessAlert) {
                 Button("OK") {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }
             } message: {
                 Text("Check your email for instructions to reset your password.")
