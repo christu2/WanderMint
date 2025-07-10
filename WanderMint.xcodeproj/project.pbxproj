@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5A0991454781E20AC4BFDFE3 /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2141FCBAD86072B358EC9415 /* Pods_WanderMint.framework */; };
+		419DA66C97186381B51BCFFE /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		013727A52E1F7FD700CDA2CF /* WanderMint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WanderMint.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2141FCBAD86072B358EC9415 /* Pods_WanderMint.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WanderMint.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		C7605EB4FBA4D6EAE56DA650 /* Pods-WanderMint.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.debug.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.debug.xcconfig"; sourceTree = "<group>"; };
-		CB652C612B31B30972170D30 /* Pods-WanderMint.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.release.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.release.xcconfig"; sourceTree = "<group>"; };
+		7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WanderMint.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.release.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.release.xcconfig"; sourceTree = "<group>"; };
+		E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.debug.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -30,7 +30,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5A0991454781E20AC4BFDFE3 /* Pods_WanderMint.framework in Frameworks */,
+				419DA66C97186381B51BCFFE /* Pods_WanderMint.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,7 +43,7 @@
 				013727A72E1F7FD700CDA2CF /* WanderMint */,
 				013727A62E1F7FD700CDA2CF /* Products */,
 				7492F0A1BCA036B318386AC0 /* Pods */,
-				FDD7022D7C2B3ACD7E4F085C /* Frameworks */,
+				39E3245BDFE577EECC331E73 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -55,21 +55,21 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		39E3245BDFE577EECC331E73 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		7492F0A1BCA036B318386AC0 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				C7605EB4FBA4D6EAE56DA650 /* Pods-WanderMint.debug.xcconfig */,
-				CB652C612B31B30972170D30 /* Pods-WanderMint.release.xcconfig */,
+				E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */,
+				A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */,
 			);
 			path = Pods;
-			sourceTree = "<group>";
-		};
-		FDD7022D7C2B3ACD7E4F085C /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				2141FCBAD86072B358EC9415 /* Pods_WanderMint.framework */,
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -79,11 +79,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 013727B02E1F7FD700CDA2CF /* Build configuration list for PBXNativeTarget "WanderMint" */;
 			buildPhases = (
-				F7A475576B6F9F4FCD3E9EF6 /* [CP] Check Pods Manifest.lock */,
+				8AB90592B9EB57CF3DA96282 /* [CP] Check Pods Manifest.lock */,
 				013727A12E1F7FD700CDA2CF /* Sources */,
 				013727A22E1F7FD700CDA2CF /* Frameworks */,
 				013727A32E1F7FD700CDA2CF /* Resources */,
-				5F1CE28DC70D5A58A82C8764 /* [CP] Embed Pods Frameworks */,
+				08023BFD0625B1E3DC4435C9 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -142,7 +142,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		5F1CE28DC70D5A58A82C8764 /* [CP] Embed Pods Frameworks */ = {
+		08023BFD0625B1E3DC4435C9 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -163,7 +163,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		F7A475576B6F9F4FCD3E9EF6 /* [CP] Check Pods Manifest.lock */ = {
+		8AB90592B9EB57CF3DA96282 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -319,7 +319,7 @@
 		};
 		013727B12E1F7FD700CDA2CF /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C7605EB4FBA4D6EAE56DA650 /* Pods-WanderMint.debug.xcconfig */;
+			baseConfigurationReference = E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -348,7 +348,7 @@
 		};
 		013727B22E1F7FD700CDA2CF /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = CB652C612B31B30972170D30 /* Pods-WanderMint.release.xcconfig */;
+			baseConfigurationReference = A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
