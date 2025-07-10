@@ -1,0 +1,23 @@
+# Firebase configuration files
+GoogleService-Info.plist
+GoogleService-Info-backup.plist
+
+# Xcode
+*.xcuserdata
+*.xcuserdatad
+.DS_Store
+DerivedData/
+*.hmap
+*.ipa
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Swift Package Manager
+.build/
+
+# Claude Code settings
+.claude/settings.local.json
