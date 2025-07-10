@@ -1,6 +1,6 @@
 //
 //  AuthenticationViewModel.swift
-//  TravelConsultingApp
+//  WanderMint
 //
 //  Created by Nick Christus on 6/6/25.
 //

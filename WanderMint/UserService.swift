@@ -1,6 +1,6 @@
 //
 //  UserService.swift
-//  TravelConsultingApp
+//  WanderMint
 //
 //  Created by Claude Code on 7/6/25.
 //

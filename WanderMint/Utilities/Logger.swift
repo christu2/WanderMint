@@ -3,7 +3,7 @@ import os.log
 
 /// Centralized logging system for the app
 struct Logger {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "TravelConsultingApp"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "WanderMint"
     
     // Different log categories
     static let auth = OSLog(subsystem: subsystem, category: "Authentication")

@@ -1,13 +1,13 @@
 //
-//  TravelConsultingAppUITestsLaunchTests.swift
-//  TravelConsultingAppUITests
+//  WanderMintUITestsLaunchTests.swift
+//  WanderMintUITests
 //
-//  Created by Nick Christus on 3/9/25.
+//  Created by Nick Christus on 7/10/25.
 //
 
 import XCTest
 
-final class TravelConsultingAppUITestsLaunchTests: XCTestCase {
+final class WanderMintUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
@@ -17,13 +17,12 @@ final class TravelConsultingAppUITestsLaunchTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Insert steps here to perform after app launch but before taking a screenshot,
-        // such as logging into a test account or navigating somewhere in the app
+        // Insert steps here to perform after the app launch but before taking a screenshot
+        // for example, logging into a test account or navigating to a specific screen
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"
