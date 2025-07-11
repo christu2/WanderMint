@@ -3,6 +3,85 @@ import Foundation
 /// Form validation utilities
 struct FormValidation {
     
+    // MARK: - General Validation
+    
+    /// Validate email format
+    static func isValidEmail(_ email: String) -> Bool {
+        guard !email.isEmpty else { return false }
+        let emailComponents = email.components(separatedBy: "@")
+        guard emailComponents.count == 2 else { return false }
+        let local = emailComponents[0]
+        let domain = emailComponents[1]
+        
+        // Check local part
+        guard !local.isEmpty else { return false }
+        guard !local.contains("..") else { return false }
+        
+        // Check domain part
+        guard !domain.isEmpty else { return false }
+        guard !domain.hasPrefix(".") && !domain.hasSuffix(".") else { return false }
+        guard !domain.contains("..") else { return false }
+        
+        let domainComponents = domain.components(separatedBy: ".")
+        return domainComponents.count >= 2 && domainComponents.allSatisfy { !$0.isEmpty }
+    }
+    
+    /// Validate password strength (minimum 8 characters)
+    static func isValidPassword(_ password: String) -> Bool {
+        return password.count >= 8
+    }
+    
+    /// Validate name format
+    static func isValidName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        
+        let nameRegex = #"^[a-zA-ZÀ-ÿ\s\-']+$"#
+        return NSPredicate(format: "SELF MATCHES %@", nameRegex).evaluate(with: trimmed)
+    }
+    
+    /// Validate date range
+    static func isValidDateRange(start: Date, end: Date) -> Bool {
+        return start < end
+    }
+    
+    /// Validate trip title
+    static func isValidTripTitle(_ title: String) -> Bool {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.count >= 2
+    }
+    
+    /// Validate destination
+    static func isValidDestination(_ destination: String) -> Bool {
+        let trimmed = destination.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.count >= 2
+    }
+    
+    /// Validate points amount
+    static func isValidPointsAmount(_ amount: Int) -> Bool {
+        return amount >= 0
+    }
+    
+    /// Validate provider name
+    static func isValidProviderName(_ name: String) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !trimmed.isEmpty
+    }
+    
+    /// Trim whitespace from string
+    static func trimWhitespace(_ input: String) -> String {
+        return input.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    /// Sanitize input by removing potentially harmful characters
+    static func sanitizeInput(_ input: String) -> String {
+        return input
+            .replacingOccurrences(of: "<", with: "")
+            .replacingOccurrences(of: ">", with: "")
+            .replacingOccurrences(of: "&", with: "")
+            .replacingOccurrences(of: "script", with: "")
+    }
+    
     // MARK: - Trip Validation
     struct Trip {
         

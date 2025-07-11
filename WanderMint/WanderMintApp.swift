@@ -4,58 +4,71 @@ import Firebase
 @main
 struct WanderMintApp: App {
     @StateObject private var authViewModel = AuthenticationViewModel()
-    @State private var showingSplash = true
-    
+    @State private var appState: AppState = .splash
+
     init() {
         FirebaseApp.configure()
         setupAppearance()
+        _ = AppTheme.Animation.spring
     }
-    
+
     var body: some Scene {
         WindowGroup {
-            if showingSplash {
-                SplashView()
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                            withAnimation(AppTheme.Animation.medium) {
-                                showingSplash = false
-                            }
-                        }
-                    }
-            } else {
-                if authViewModel.isAuthenticated {
-                    if authViewModel.needsOnboarding {
-                        ProfileSetupView()
-                            .environmentObject(authViewModel)
-                    } else {
-                        MainTabView()
-                            .environmentObject(authViewModel)
-                    }
-                } else {
-                    AuthenticationView()
-                        .environmentObject(authViewModel)
-                }
-            }
+            rootView
         }
     }
-    
+
+    @ViewBuilder
+    private var rootView: some View {
+        switch appState {
+        case .splash:
+            SplashView {
+                updateAppState()
+            }
+
+        case .onboarding:
+            ProfileSetupView()
+                .environmentObject(authViewModel)
+
+        case .main:
+            MainTabView()
+                .environmentObject(authViewModel)
+
+        case .authentication:
+            AuthenticationView()
+                .environmentObject(authViewModel)
+        }
+    }
+
+    private func updateAppState() {
+        if authViewModel.isAuthenticated {
+            appState = authViewModel.needsOnboarding ? .onboarding : .main
+        } else {
+            appState = .authentication
+        }
+    }
+
+
     private func setupAppearance() {
-        // Customize navigation bar appearance
         let navBarAppearance = UINavigationBarAppearance()
         navBarAppearance.configureWithOpaqueBackground()
         navBarAppearance.backgroundColor = UIColor(AppTheme.Colors.backgroundPrimary)
         navBarAppearance.titleTextAttributes = [.foregroundColor: UIColor(AppTheme.Colors.textPrimary)]
         navBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor(AppTheme.Colors.textPrimary)]
-        
         UINavigationBar.appearance().standardAppearance = navBarAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navBarAppearance
-        
-        // Customize tab bar appearance
+
         let tabBarAppearance = UITabBarAppearance()
         tabBarAppearance.configureWithOpaqueBackground()
         tabBarAppearance.backgroundColor = UIColor(AppTheme.Colors.backgroundPrimary)
-        
         UITabBar.appearance().standardAppearance = tabBarAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabBarAppearance
     }
+}
+
+private enum AppState {
+    case splash
+    case onboarding
+    case main
+    case authentication
 }

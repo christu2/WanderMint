@@ -203,6 +203,7 @@ struct ProfileView: View {
             
             VStack(spacing: AppTheme.Spacing.sm) {
                 SettingsRow(icon: "bell.fill", title: "Notifications", color: AppTheme.Colors.warning)
+                
                 SettingsRow(icon: "lock.fill", title: "Privacy & Security", color: AppTheme.Colors.primary)
                 SettingsRow(icon: "questionmark.circle.fill", title: "Help & Support", color: AppTheme.Colors.info)
                 SettingsRow(icon: "star.fill", title: "Rate the App", color: AppTheme.Colors.secondary)

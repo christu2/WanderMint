@@ -7,22 +7,40 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		419DA66C97186381B51BCFFE /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */; };
+		86F4316BE1E100975C689A91 /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5A151F2992A536EC81BFB8F /* Pods_WanderMint.framework */; };
+		B9B2C94472E354A7FE0FD4D5 /* Pods_WanderMintTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B9104958E7FA0D6D57EB69A4 /* Pods_WanderMintTests.framework */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		0191FA8C2E2067140011E20F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0137279D2E1F7FD700CDA2CF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 013727A42E1F7FD700CDA2CF;
+			remoteInfo = WanderMint;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		013727A52E1F7FD700CDA2CF /* WanderMint.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WanderMint.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WanderMint.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.release.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.release.xcconfig"; sourceTree = "<group>"; };
-		E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.debug.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.debug.xcconfig"; sourceTree = "<group>"; };
+		0191FA882E2067140011E20F /* WanderMintTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WanderMintTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		136EE5D8E9D0CBDCB62A2D0B /* Pods-WanderMintTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMintTests.release.xcconfig"; path = "Target Support Files/Pods-WanderMintTests/Pods-WanderMintTests.release.xcconfig"; sourceTree = "<group>"; };
+		28118F6E255E8D4BB5272EEE /* Pods-WanderMintTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMintTests.debug.xcconfig"; path = "Target Support Files/Pods-WanderMintTests/Pods-WanderMintTests.debug.xcconfig"; sourceTree = "<group>"; };
+		7689DAB5DB0A5A5258F48BE1 /* Pods-WanderMint.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.debug.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.debug.xcconfig"; sourceTree = "<group>"; };
+		8925B30E297BD39837C730AB /* Pods-WanderMint.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WanderMint.release.xcconfig"; path = "Target Support Files/Pods-WanderMint/Pods-WanderMint.release.xcconfig"; sourceTree = "<group>"; };
+		A5A151F2992A536EC81BFB8F /* Pods_WanderMint.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WanderMint.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9104958E7FA0D6D57EB69A4 /* Pods_WanderMintTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_WanderMintTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		013727A72E1F7FD700CDA2CF /* WanderMint */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = WanderMint;
+			sourceTree = "<group>";
+		};
+		0191FA892E2067140011E20F /* WanderMintTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WanderMintTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +50,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				419DA66C97186381B51BCFFE /* Pods_WanderMint.framework in Frameworks */,
+				86F4316BE1E100975C689A91 /* Pods_WanderMint.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0191FA852E2067140011E20F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B9B2C94472E354A7FE0FD4D5 /* Pods_WanderMintTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -43,9 +69,10 @@
 			isa = PBXGroup;
 			children = (
 				013727A72E1F7FD700CDA2CF /* WanderMint */,
+				0191FA892E2067140011E20F /* WanderMintTests */,
 				013727A62E1F7FD700CDA2CF /* Products */,
 				7492F0A1BCA036B318386AC0 /* Pods */,
-				39E3245BDFE577EECC331E73 /* Frameworks */,
+				0604122A8469B531E26A5EE0 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -53,14 +80,16 @@
 			isa = PBXGroup;
 			children = (
 				013727A52E1F7FD700CDA2CF /* WanderMint.app */,
+				0191FA882E2067140011E20F /* WanderMintTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		39E3245BDFE577EECC331E73 /* Frameworks */ = {
+		0604122A8469B531E26A5EE0 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				7BBB2FED78FD4B2665EA4DEB /* Pods_WanderMint.framework */,
+				A5A151F2992A536EC81BFB8F /* Pods_WanderMint.framework */,
+				B9104958E7FA0D6D57EB69A4 /* Pods_WanderMintTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -68,8 +97,10 @@
 		7492F0A1BCA036B318386AC0 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */,
-				A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */,
+				7689DAB5DB0A5A5258F48BE1 /* Pods-WanderMint.debug.xcconfig */,
+				8925B30E297BD39837C730AB /* Pods-WanderMint.release.xcconfig */,
+				28118F6E255E8D4BB5272EEE /* Pods-WanderMintTests.debug.xcconfig */,
+				136EE5D8E9D0CBDCB62A2D0B /* Pods-WanderMintTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -81,11 +112,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 013727B02E1F7FD700CDA2CF /* Build configuration list for PBXNativeTarget "WanderMint" */;
 			buildPhases = (
-				8AB90592B9EB57CF3DA96282 /* [CP] Check Pods Manifest.lock */,
+				1651FA3F516863C26248D3CB /* [CP] Check Pods Manifest.lock */,
 				013727A12E1F7FD700CDA2CF /* Sources */,
 				013727A22E1F7FD700CDA2CF /* Frameworks */,
 				013727A32E1F7FD700CDA2CF /* Resources */,
-				08023BFD0625B1E3DC4435C9 /* [CP] Embed Pods Frameworks */,
+				63E2C4AB0A0273789122D9AC /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -99,6 +130,28 @@
 			productReference = 013727A52E1F7FD700CDA2CF /* WanderMint.app */;
 			productType = "com.apple.product-type.application";
 		};
+		0191FA872E2067140011E20F /* WanderMintTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0191FA902E2067140011E20F /* Build configuration list for PBXNativeTarget "WanderMintTests" */;
+			buildPhases = (
+				4B4B676B9B3FD4AD0B8BE88C /* [CP] Check Pods Manifest.lock */,
+				0191FA842E2067140011E20F /* Sources */,
+				0191FA852E2067140011E20F /* Frameworks */,
+				0191FA862E2067140011E20F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0191FA8D2E2067140011E20F /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0191FA892E2067140011E20F /* WanderMintTests */,
+			);
+			name = WanderMintTests;
+			productName = WanderMintTests;
+			productReference = 0191FA882E2067140011E20F /* WanderMintTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -111,6 +164,10 @@
 				TargetAttributes = {
 					013727A42E1F7FD700CDA2CF = {
 						CreatedOnToolsVersion = 16.4;
+					};
+					0191FA872E2067140011E20F = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 013727A42E1F7FD700CDA2CF;
 					};
 				};
 			};
@@ -129,6 +186,7 @@
 			projectRoot = "";
 			targets = (
 				013727A42E1F7FD700CDA2CF /* WanderMint */,
+				0191FA872E2067140011E20F /* WanderMintTests */,
 			);
 		};
 /* End PBXProject section */
@@ -141,27 +199,17 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-/* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		08023BFD0625B1E3DC4435C9 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
+		0191FA862E2067140011E20F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
 		};
-		8AB90592B9EB57CF3DA96282 /* [CP] Check Pods Manifest.lock */ = {
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		1651FA3F516863C26248D3CB /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -183,6 +231,49 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		4B4B676B9B3FD4AD0B8BE88C /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-WanderMintTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		63E2C4AB0A0273789122D9AC /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -193,7 +284,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0191FA842E2067140011E20F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0191FA8D2E2067140011E20F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 013727A42E1F7FD700CDA2CF /* WanderMint */;
+			targetProxy = 0191FA8C2E2067140011E20F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		013727AE2E1F7FD700CDA2CF /* Debug */ = {
@@ -317,7 +423,7 @@
 		};
 		013727B12E1F7FD700CDA2CF /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = E58592E234EC7099FD41BDCC /* Pods-WanderMint.debug.xcconfig */;
+			baseConfigurationReference = 7689DAB5DB0A5A5258F48BE1 /* Pods-WanderMint.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -336,6 +442,78 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"sqlite3\"",
+					"-l\"z\"",
+					"-framework",
+					"\"FBLPromises\"",
+					"-framework",
+					"\"FirebaseAnalytics\"",
+					"-framework",
+					"\"FirebaseAppCheckInterop\"",
+					"-framework",
+					"\"FirebaseAuth\"",
+					"-framework",
+					"\"FirebaseAuthInterop\"",
+					"-framework",
+					"\"FirebaseCore\"",
+					"-framework",
+					"\"FirebaseCoreExtension\"",
+					"-framework",
+					"\"FirebaseCoreInternal\"",
+					"-framework",
+					"\"FirebaseFirestore\"",
+					"-framework",
+					"\"FirebaseFirestoreInternal\"",
+					"-framework",
+					"\"FirebaseFunctions\"",
+					"-framework",
+					"\"FirebaseInstallations\"",
+					"-framework",
+					"\"FirebaseMessagingInterop\"",
+					"-framework",
+					"\"FirebaseSharedSwift\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"GTMSessionFetcher\"",
+					"-framework",
+					"\"GoogleAdsOnDeviceConversion\"",
+					"-framework",
+					"\"GoogleAppMeasurement\"",
+					"-framework",
+					"\"GoogleAppMeasurementIdentitySupport\"",
+					"-framework",
+					"\"GoogleUtilities\"",
+					"-framework",
+					"\"RecaptchaInterop\"",
+					"-framework",
+					"\"SafariServices\"",
+					"-framework",
+					"\"Security\"",
+					"-framework",
+					"\"StoreKit\"",
+					"-framework",
+					"\"SystemConfiguration\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"absl\"",
+					"-framework",
+					"\"grpc\"",
+					"-framework",
+					"\"grpcpp\"",
+					"-framework",
+					"\"leveldb\"",
+					"-framework",
+					"\"nanopb\"",
+					"-framework",
+					"\"openssl_grpc\"",
+					"-weak_framework",
+					"\"FirebaseFirestoreInternal\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.christus.WanderMint;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -346,7 +524,7 @@
 		};
 		013727B22E1F7FD700CDA2CF /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = A5FDF6499BDD22593B9139A1 /* Pods-WanderMint.release.xcconfig */;
+			baseConfigurationReference = 8925B30E297BD39837C730AB /* Pods-WanderMint.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -365,11 +543,121 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-l\"sqlite3\"",
+					"-l\"z\"",
+					"-framework",
+					"\"FBLPromises\"",
+					"-framework",
+					"\"FirebaseAnalytics\"",
+					"-framework",
+					"\"FirebaseAppCheckInterop\"",
+					"-framework",
+					"\"FirebaseAuth\"",
+					"-framework",
+					"\"FirebaseAuthInterop\"",
+					"-framework",
+					"\"FirebaseCore\"",
+					"-framework",
+					"\"FirebaseCoreExtension\"",
+					"-framework",
+					"\"FirebaseCoreInternal\"",
+					"-framework",
+					"\"FirebaseFirestore\"",
+					"-framework",
+					"\"FirebaseFirestoreInternal\"",
+					"-framework",
+					"\"FirebaseFunctions\"",
+					"-framework",
+					"\"FirebaseInstallations\"",
+					"-framework",
+					"\"FirebaseMessagingInterop\"",
+					"-framework",
+					"\"FirebaseSharedSwift\"",
+					"-framework",
+					"\"Foundation\"",
+					"-framework",
+					"\"GTMSessionFetcher\"",
+					"-framework",
+					"\"GoogleAdsOnDeviceConversion\"",
+					"-framework",
+					"\"GoogleAppMeasurement\"",
+					"-framework",
+					"\"GoogleAppMeasurementIdentitySupport\"",
+					"-framework",
+					"\"GoogleUtilities\"",
+					"-framework",
+					"\"RecaptchaInterop\"",
+					"-framework",
+					"\"SafariServices\"",
+					"-framework",
+					"\"Security\"",
+					"-framework",
+					"\"StoreKit\"",
+					"-framework",
+					"\"SystemConfiguration\"",
+					"-framework",
+					"\"UIKit\"",
+					"-framework",
+					"\"absl\"",
+					"-framework",
+					"\"grpc\"",
+					"-framework",
+					"\"grpcpp\"",
+					"-framework",
+					"\"leveldb\"",
+					"-framework",
+					"\"nanopb\"",
+					"-framework",
+					"\"openssl_grpc\"",
+					"-weak_framework",
+					"\"FirebaseFirestoreInternal\"",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.christus.WanderMint;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0191FA8E2E2067140011E20F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 28118F6E255E8D4BB5272EEE /* Pods-WanderMintTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christus.WanderMintTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WanderMint.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WanderMint";
+			};
+			name = Debug;
+		};
+		0191FA8F2E2067140011E20F /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 136EE5D8E9D0CBDCB62A2D0B /* Pods-WanderMintTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.christus.WanderMintTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/WanderMint.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/WanderMint";
 			};
 			name = Release;
 		};
@@ -390,6 +678,15 @@
 			buildConfigurations = (
 				013727B12E1F7FD700CDA2CF /* Debug */,
 				013727B22E1F7FD700CDA2CF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0191FA902E2067140011E20F /* Build configuration list for PBXNativeTarget "WanderMintTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0191FA8E2E2067140011E20F /* Debug */,
+				0191FA8F2E2067140011E20F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

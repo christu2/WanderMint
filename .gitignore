@@ -21,3 +21,4 @@ Podfile.lock
 
 # Claude Code settings
 .claude/settings.local.json
+Pods/

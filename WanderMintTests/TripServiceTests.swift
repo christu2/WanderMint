@@ -11,6 +11,7 @@ import FirebaseAuth
 import FirebaseFirestore
 @testable import WanderMint
 
+@MainActor
 final class TripServiceTests: XCTestCase {
     
     var tripService: TripService!
@@ -133,12 +134,10 @@ final class TripServiceTests: XCTestCase {
         
         XCTAssertEqual(trip.status, .pending)
         
-        // Simulate status change
-        trip.status = .inProgress
-        XCTAssertEqual(trip.status, .inProgress)
-        
-        trip.status = .completed
-        XCTAssertEqual(trip.status, .completed)
+        // Test different status enum values
+        XCTAssertEqual(TripStatusType.pending.rawValue, "pending")
+        XCTAssertEqual(TripStatusType.inProgress.rawValue, "in_progress")
+        XCTAssertEqual(TripStatusType.completed.rawValue, "completed")
     }
     
     // MARK: - Trip Service Method Tests
@@ -206,12 +205,12 @@ final class TripServiceTests: XCTestCase {
 
 // MARK: - Mock URL Session
 
-class MockURLSession: URLSession {
+class MockURLSession {
     var data: Data?
     var response: URLResponse?
     var error: Error?
     
-    override func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
         if let error = error {
             throw error
         }

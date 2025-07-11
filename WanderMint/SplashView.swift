@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SplashView: View {
+    let onComplete: () -> Void
     @State private var isLoading = true
     @State private var scale = 0.7
     @State private var opacity = 0.5
@@ -55,15 +56,18 @@ struct SplashView: View {
             }
         }
         .onAppear {
-            withAnimation(AppTheme.Animation.spring.delay(0.1)) {
+            withAnimation(AppTheme.Animation.spring) {
                 scale = 1.0
                 opacity = 1.0
             }
-            
-            // Simulate loading time
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
                 withAnimation(AppTheme.Animation.medium) {
                     isLoading = false
+                }
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    onComplete()
                 }
             }
         }
@@ -71,5 +75,7 @@ struct SplashView: View {
 }
 
 #Preview {
-    SplashView()
+    SplashView {
+        // Preview completion handler
+    }
 }

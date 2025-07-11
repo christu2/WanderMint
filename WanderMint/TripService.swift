@@ -79,7 +79,7 @@ class TripService: ObservableObject {
                 throw TravelAppError.networkError("Invalid response")
             }
             
-            let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+            let _ = String(data: data, encoding: .utf8) ?? "No response data"
             
             if httpResponse.statusCode == 200 {
                 return
@@ -167,7 +167,7 @@ class TripService: ObservableObject {
                 throw TravelAppError.networkError("Invalid response")
             }
             
-            let responseString = String(data: data, encoding: .utf8) ?? "No response data"
+            let _ = String(data: data, encoding: .utf8) ?? "No response data"
             
             if httpResponse.statusCode == 200 {
                 return
@@ -251,10 +251,10 @@ class TripService: ObservableObject {
             // Check if recommendation exists
             if let recData = data["recommendation"] as? [String: Any] {
                 if let transportationData = recData["transportation"] as? [String: Any] {
-                    if let flightInfo = transportationData["flightInfo"] as? [String: Any] {
+                    if let flightInfo = transportationData["flightInfo"] as? [String: Any], !flightInfo.isEmpty {
                     }
                 }
-                if let accommodationsData = recData["accommodations"] as? [[String: Any]] {
+                if let accommodationsData = recData["accommodations"] as? [[String: Any]], !accommodationsData.isEmpty {
                 } else {
                 }
                 
@@ -264,17 +264,17 @@ class TripService: ObservableObject {
                     if let flightsData = itineraryData["flights"] as? [String: Any] {
                         
                         // Check what type allFlights actually is
-                        let allFlightsValue = flightsData["allFlights"]
+                        let _ = flightsData["allFlights"]
                         
                         if let allFlights = flightsData["allFlights"] as? [[String: Any]] {
-                            if let firstFlight = allFlights.first {
+                            if !allFlights.isEmpty {
                             }
-                        } else if let allFlights = flightsData["allFlights"] as? [Any] {
+                        } else if let allFlights = flightsData["allFlights"] as? [Any], !allFlights.isEmpty {
                         } else {
                         }
                     }
                     
-                    if let accommodationsData = itineraryData["accommodations"] as? [[String: Any]] {
+                    if let accommodationsData = itineraryData["accommodations"] as? [[String: Any]], !accommodationsData.isEmpty {
                     }
                 } else {
                 }

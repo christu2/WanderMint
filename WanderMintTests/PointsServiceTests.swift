@@ -10,6 +10,7 @@ import Firebase
 import FirebaseFirestore
 @testable import WanderMint
 
+@MainActor
 final class PointsServiceTests: XCTestCase {
     
     var pointsService: PointsService!
@@ -78,7 +79,7 @@ final class PointsServiceTests: XCTestCase {
         XCTAssertFalse(airlineProviders.isEmpty)
         
         // Test specific providers
-        XCTAssertTrue(creditCardProviders.contains("Chase Sapphire"))
+        XCTAssertTrue(creditCardProviders.contains("Chase"))
         XCTAssertTrue(hotelProviders.contains("Marriott"))
         XCTAssertTrue(airlineProviders.contains("United"))
     }

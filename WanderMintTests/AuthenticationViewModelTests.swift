@@ -101,30 +101,33 @@ final class AuthenticationViewModelTests: XCTestCase {
 
 // MARK: - Mock Classes
 
-class MockUserService: UserService {
+@MainActor
+class MockUserService {
     var shouldSucceed = true
     var mockUserProfile: UserProfile?
     
-    override func createUserProfile(for user: User, name: String = "") async throws {
+    init() {}
+    
+    func createUserProfile(for user: User, name: String = "") async throws {
         if !shouldSucceed {
             throw TravelAppError.dataError("Mock create user profile error")
         }
     }
     
-    override func getUserProfile() async throws -> UserProfile? {
+    func getUserProfile() async throws -> UserProfile? {
         if !shouldSucceed {
             throw TravelAppError.dataError("Mock get user profile error")
         }
         return mockUserProfile
     }
     
-    override func updateUserProfile(name: String) async throws {
+    func updateUserProfile(name: String) async throws {
         if !shouldSucceed {
             throw TravelAppError.dataError("Mock update user profile error")
         }
     }
     
-    override func completeOnboarding() async throws {
+    func completeOnboarding() async throws {
         if !shouldSucceed {
             throw TravelAppError.dataError("Mock complete onboarding error")
         }

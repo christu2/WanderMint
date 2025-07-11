@@ -12,7 +12,10 @@ import FirebaseFirestore
 
 @MainActor
 class UserService: ObservableObject {
+    static let shared = UserService()
     private let db = Firestore.firestore()
+    
+    private init() {}
     
     func createUserProfile(for user: User, name: String = "") async throws {
         let userData: [String: Any] = [

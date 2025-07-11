@@ -20,7 +20,7 @@ class AuthenticationViewModel: ObservableObject {
     @Published var needsOnboarding = false
     
     private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
-    private let userService = UserService()
+    private let userService = UserService.shared
     
     init() {
         setupAuthStateListener()
