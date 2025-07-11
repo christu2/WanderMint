@@ -591,13 +591,13 @@ struct HotelDetailModal: View {
                     }
                     
                     // TripAdvisor Integration
-                    if let tripadvisorId = hotel.tripadvisorId, !tripadvisorId.isEmpty {
+                    if let tripadvisorUrl = hotel.tripadvisorUrl, !tripadvisorUrl.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Reviews & Info")
                                 .font(.headline)
                             
                             Button(action: {
-                                if let url = URL(string: "https://www.tripadvisor.com/Hotel_Review-g\(tripadvisorId)") {
+                                if let url = URL(string: tripadvisorUrl) {
                                     UIApplication.shared.open(url)
                                 }
                             }) {

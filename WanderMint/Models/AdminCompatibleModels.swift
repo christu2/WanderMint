@@ -106,10 +106,11 @@ struct AdminHotel: Codable {
     let bookingUrl: String
     let detailedDescription: String
     let tripadvisorId: String?
+    let tripadvisorUrl: String?
     
     enum CodingKeys: String, CodingKey {
         case name, rating, pricePerNight, pointsPerNight, loyaltyProgram
-        case location, bookingUrl, detailedDescription, tripadvisorId
+        case location, bookingUrl, detailedDescription, tripadvisorId, tripadvisorUrl
     }
     
     init(from decoder: Decoder) throws {
@@ -120,6 +121,7 @@ struct AdminHotel: Codable {
         bookingUrl = try container.decodeIfPresent(String.self, forKey: .bookingUrl) ?? ""
         detailedDescription = try container.decodeIfPresent(String.self, forKey: .detailedDescription) ?? ""
         tripadvisorId = try container.decodeIfPresent(String.self, forKey: .tripadvisorId)
+        tripadvisorUrl = try container.decodeIfPresent(String.self, forKey: .tripadvisorUrl)
         pointsPerNight = try container.decodeIfPresent(Int.self, forKey: .pointsPerNight)
         loyaltyProgram = try container.decodeIfPresent(String.self, forKey: .loyaltyProgram)
         
@@ -143,6 +145,7 @@ struct AdminHotel: Codable {
         try container.encode(bookingUrl, forKey: .bookingUrl)
         try container.encode(detailedDescription, forKey: .detailedDescription)
         try container.encode(tripadvisorId, forKey: .tripadvisorId)
+        try container.encode(tripadvisorUrl, forKey: .tripadvisorUrl)
     }
 }
 
