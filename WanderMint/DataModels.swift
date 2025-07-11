@@ -1471,6 +1471,8 @@ enum TravelAppError: Error, LocalizedError {
     case networkError(String)
     case dataError(String)
     case submissionFailed(String)
+    case networkUnavailable
+    case requestTimeout
     case unknown
     
     var errorDescription: String? {
@@ -1483,6 +1485,10 @@ enum TravelAppError: Error, LocalizedError {
             return "Data error: \(message)"
         case .submissionFailed(let message):
             return "Trip submission failed: \(message)"
+        case .networkUnavailable:
+            return "Network connection unavailable. Please check your internet connection."
+        case .requestTimeout:
+            return "Request timed out. Please try again."
         case .unknown:
             return "An unknown error occurred. Please try again."
         }

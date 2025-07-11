@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @EnvironmentObject var notificationService: NotificationService
     @State private var selectedTab = 1 // Default to "My Trips" tab
     
     var body: some View {
@@ -28,6 +29,16 @@ struct MainTabView: View {
                 .tag(2)
         }
         .accentColor(AppTheme.Colors.primary)
+        .onReceive(notificationService.$pendingTripId) { tripId in
+            if let tripId = tripId {
+                // Switch to trips tab and navigate to specific trip
+                selectedTab = 1
+                // The TripsListView will handle navigation to the specific trip
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    notificationService.clearPendingNavigation()
+                }
+            }
+        }
     }
 }
 

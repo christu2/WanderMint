@@ -2,13 +2,18 @@ import SwiftUI
 
 struct TripsListView: View {
     @StateObject private var viewModel = TripsListViewModel()
+    @EnvironmentObject var notificationService: NotificationService
     @Binding var selectedTab: Int
     
     var body: some View {
         NavigationView {
             ZStack {
                 TripsListBackground()
-                TripsListContent(viewModel: viewModel, selectedTab: $selectedTab)
+                TripsListContent(
+                    viewModel: viewModel, 
+                    selectedTab: $selectedTab,
+                    pendingTripId: notificationService.pendingTripId
+                )
             }
             .navigationBarHidden(true)
             .onAppear {
@@ -40,6 +45,7 @@ struct TripsListBackground: View {
 struct TripsListContent: View {
     @ObservedObject var viewModel: TripsListViewModel
     @Binding var selectedTab: Int
+    let pendingTripId: String?
     
     var body: some View {
         Group {
@@ -50,9 +56,13 @@ struct TripsListContent: View {
             } else if viewModel.trips.isEmpty {
                 TripsListEmptyStateView(selectedTab: $selectedTab)
             } else {
-                TripsListScrollView(trips: viewModel.trips, refreshAction: {
-                    await viewModel.refreshTrips()
-                })
+                TripsListScrollView(
+                    trips: viewModel.trips, 
+                    pendingTripId: pendingTripId,
+                    refreshAction: {
+                        await viewModel.refreshTrips()
+                    }
+                )
             }
         }
     }
@@ -74,13 +84,14 @@ struct TripsListErrorView: View {
 
 struct TripsListScrollView: View {
     let trips: [TravelTrip]
+    let pendingTripId: String?
     let refreshAction: () async -> Void
     
     var body: some View {
         ScrollView {
             LazyVStack(spacing: AppTheme.Spacing.md) {
                 TripsListHeader(tripCount: trips.count)
-                TripsListGrid(trips: trips)
+                TripsListGrid(trips: trips, pendingTripId: pendingTripId)
             }
         }
         .refreshable {
@@ -110,14 +121,31 @@ struct TripsListHeader: View {
 
 struct TripsListGrid: View {
     let trips: [TravelTrip]
+    let pendingTripId: String?
+    @State private var selectedTripId: String? = nil
     
     var body: some View {
         ForEach(trips) { trip in
-            NavigationLink(destination: TripDetailView(initialTrip: trip)) {
+            NavigationLink(
+                destination: TripDetailView(initialTrip: trip),
+                tag: trip.id,
+                selection: $selectedTripId
+            ) {
                 EnhancedTripCard(trip: trip)
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, AppTheme.Spacing.lg)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToTrip"))) { notification in
+            if let tripId = notification.object as? String {
+                selectedTripId = tripId
+            }
+        }
+        .onChange(of: pendingTripId) { tripId in
+            if let tripId = tripId {
+                // Navigate to the specific trip
+                selectedTripId = tripId
+            }
         }
     }
 }

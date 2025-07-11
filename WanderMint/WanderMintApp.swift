@@ -4,6 +4,7 @@ import Firebase
 @main
 struct WanderMintApp: App {
     @StateObject private var authViewModel = AuthenticationViewModel()
+    @StateObject private var notificationService = NotificationService.shared
     @State private var appState: AppState = .splash
 
     init() {
@@ -33,6 +34,15 @@ struct WanderMintApp: App {
         case .main:
             MainTabView()
                 .environmentObject(authViewModel)
+                .environmentObject(notificationService)
+                .onAppear {
+                    Task {
+                        await notificationService.startListening()
+                    }
+                }
+                .onDisappear {
+                    notificationService.stopListening()
+                }
 
         case .authentication:
             AuthenticationView()

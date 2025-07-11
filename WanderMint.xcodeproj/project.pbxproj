@@ -35,11 +35,15 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		013727A72E1F7FD700CDA2CF /* WanderMint */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = WanderMint;
 			sourceTree = "<group>";
 		};
 		0191FA892E2067140011E20F /* WanderMintTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = WanderMintTests;
 			sourceTree = "<group>";
 		};
@@ -261,13 +265,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
