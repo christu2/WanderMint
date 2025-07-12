@@ -10,6 +10,8 @@ target 'WanderMint' do
   pod 'Firebase/Auth'
   pod 'Firebase/Firestore'
   pod 'Firebase/Functions'
+  pod 'Firebase/Analytics'
+  pod 'Firebase/Crashlytics'
 
   target 'WanderMintTests' do
     inherit! :search_paths

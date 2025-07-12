@@ -59,6 +59,7 @@ struct TripsListContent: View {
                 TripsListScrollView(
                     trips: viewModel.trips, 
                     pendingTripId: pendingTripId,
+                    viewModel: viewModel,
                     refreshAction: {
                         await viewModel.refreshTrips()
                     }
@@ -85,17 +86,23 @@ struct TripsListErrorView: View {
 struct TripsListScrollView: View {
     let trips: [TravelTrip]
     let pendingTripId: String?
+    let viewModel: TripsListViewModel
     let refreshAction: () async -> Void
     
     var body: some View {
         ScrollView {
             LazyVStack(spacing: AppTheme.Spacing.md) {
                 TripsListHeader(tripCount: trips.count)
-                TripsListGrid(trips: trips, pendingTripId: pendingTripId)
+                TripsListGrid(trips: trips, pendingTripId: pendingTripId, viewModel: viewModel)
             }
         }
         .refreshable {
             await refreshAction()
+        }
+        .navigationDestination(for: String.self) { tripId in
+            if let trip = trips.first(where: { $0.id == tripId }) {
+                TripDetailView(initialTrip: trip)
+            }
         }
     }
 }
@@ -122,29 +129,42 @@ struct TripsListHeader: View {
 struct TripsListGrid: View {
     let trips: [TravelTrip]
     let pendingTripId: String?
-    @State private var selectedTripId: String? = nil
+    let viewModel: TripsListViewModel
+    @State private var showingDeleteAlert = false
+    @State private var tripToDelete: TravelTrip?
     
     var body: some View {
         ForEach(trips) { trip in
-            NavigationLink(
-                destination: TripDetailView(initialTrip: trip),
-                tag: trip.id,
-                selection: $selectedTripId
-            ) {
-                EnhancedTripCard(trip: trip)
+            NavigationLink(value: trip.id) {
+                EnhancedTripCard(trip: trip, canDelete: viewModel.canDeleteTrip(trip))
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, AppTheme.Spacing.lg)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("NavigateToTrip"))) { notification in
-            if let tripId = notification.object as? String {
-                selectedTripId = tripId
+            .accessibilityLabel("Trip to \(trip.displayDestinations)")
+            .accessibilityHint("View trip details and itinerary")
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                if viewModel.canDeleteTrip(trip) {
+                    Button("Delete", role: .destructive) {
+                        tripToDelete = trip
+                        showingDeleteAlert = true
+                    }
+                    .tint(.red)
+                }
             }
         }
-        .onChange(of: pendingTripId) { tripId in
-            if let tripId = tripId {
-                // Navigate to the specific trip
-                selectedTripId = tripId
+        .alert("Delete Trip", isPresented: $showingDeleteAlert) {
+            Button("Cancel", role: .cancel) {
+                tripToDelete = nil
+            }
+            Button("Delete", role: .destructive) {
+                if let trip = tripToDelete {
+                    viewModel.deleteTrip(trip)
+                    tripToDelete = nil
+                }
+            }
+        } message: {
+            if let trip = tripToDelete {
+                Text("Are you sure you want to delete your trip to \(trip.displayDestinations)? This action cannot be undone.")
             }
         }
     }
@@ -223,12 +243,15 @@ struct TripsListEmptyStateButton: View {
             .applyShadow(AppTheme.Shadows.buttonShadow)
         }
         .padding(.top, AppTheme.Spacing.lg)
+        .accessibilityLabel("Plan my first trip")
+        .accessibilityHint("Start planning your first trip")
     }
 }
 
 
 struct EnhancedTripCard: View {
     let trip: TravelTrip
+    let canDelete: Bool
     
     var body: some View {
         VStack(spacing: 0) {
@@ -251,7 +274,16 @@ struct EnhancedTripCard: View {
                     Spacer()
                     
                     VStack(spacing: AppTheme.Spacing.xs) {
-                        StatusBadge(status: trip.status)
+                        HStack(spacing: AppTheme.Spacing.xs) {
+                            StatusBadge(status: trip.status)
+                            
+                            if canDelete {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .help("Swipe left to delete")
+                            }
+                        }
                         
                         Image(systemName: destinationIcon)
                             .font(.system(size: 24))
@@ -411,13 +443,25 @@ struct TripRowView: View {
 }
 
 // MARK: - ViewModel
+// Protocol to allow mocking
+protocol TripServiceProtocol {
+    func deleteTrip(tripId: String) async throws
+    func fetchUserTrips() async throws -> [TravelTrip]
+}
+
+extension TripService: TripServiceProtocol {}
+
 @MainActor
 class TripsListViewModel: ObservableObject {
     @Published var trips: [TravelTrip] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let tripService = TripService()
+    private let tripService: TripServiceProtocol
+    
+    init(tripService: TripServiceProtocol? = nil) {
+        self.tripService = tripService ?? TripService()
+    }
     
     func loadTrips() {
         isLoading = true
@@ -443,6 +487,50 @@ class TripsListViewModel: ObservableObject {
     
     func clearError() {
         errorMessage = nil
+    }
+    
+    func deleteTrip(_ trip: TravelTrip) {
+        Task {
+            await deleteTripAsync(trip)
+        }
+    }
+    
+    func deleteTripAsync(_ trip: TravelTrip) async {
+        // Check if deletion is allowed first
+        guard canDeleteTrip(trip) else {
+            await MainActor.run {
+                errorMessage = "Cannot delete this trip"
+            }
+            return
+        }
+        
+        do {
+            try await tripService.deleteTrip(tripId: trip.id)
+            // Remove from local array on success
+            await MainActor.run {
+                trips.removeAll { $0.id == trip.id }
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "Failed to delete trip: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    func canDeleteTrip(_ trip: TravelTrip) -> Bool {
+        // Allow deletion if:
+        // 1. Trip is completed or cancelled
+        // 2. Trip end date has passed
+        // 3. Trip is in failed state
+        
+        switch trip.status {
+        case .completed, .cancelled, .failed:
+            return true
+        case .pending, .inProgress:
+            // Check if trip end date has passed
+            let now = Date()
+            return trip.endDateFormatted < now
+        }
     }
 }
 

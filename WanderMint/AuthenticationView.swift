@@ -7,7 +7,9 @@
 
 
 import SwiftUI
+#if canImport(Firebase)
 import Firebase
+#endif
 
 struct AuthenticationView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel

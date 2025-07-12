@@ -1,5 +1,13 @@
 import SwiftUI
+#if canImport(Firebase)
 import Firebase
+#endif
+#if canImport(FirebaseAnalytics)
+import FirebaseAnalytics
+#endif
+#if canImport(FirebaseCrashlytics)
+import FirebaseCrashlytics
+#endif
 
 @main
 struct WanderMintApp: App {
@@ -9,6 +17,7 @@ struct WanderMintApp: App {
 
     init() {
         FirebaseApp.configure()
+        setupFirebaseServices()
         setupAppearance()
         _ = AppTheme.Animation.spring
     }
@@ -56,6 +65,31 @@ struct WanderMintApp: App {
         } else {
             appState = .authentication
         }
+    }
+    
+    private func setupFirebaseServices() {
+        // Enable Analytics data collection
+        Analytics.setAnalyticsCollectionEnabled(true)
+        
+        // Configure Crashlytics
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        
+        // Set user properties for better analytics segmentation
+        Analytics.setUserProperty(nil, forName: "app_version")
+        Analytics.setUserProperty(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, forName: "app_version")
+        
+        // Log app launch event
+        Analytics.logEvent(AnalyticsEventAppOpen, parameters: [
+            AnalyticsParameterSource: "ios_app"
+        ])
+        
+        #if DEBUG
+        // Disable analytics in debug mode
+        Analytics.setAnalyticsCollectionEnabled(false)
+        print("🔥 Firebase Analytics disabled in DEBUG mode")
+        #else
+        print("🔥 Firebase Analytics and Crashlytics enabled for production")
+        #endif
     }
 
 

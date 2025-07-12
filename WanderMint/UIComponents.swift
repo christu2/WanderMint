@@ -85,6 +85,8 @@ struct StatusBadge: View {
         .foregroundColor(.white)
         .cornerRadius(AppTheme.CornerRadius.md)
         .applyShadow(Shadow(color: backgroundColorForStatus(status).opacity(0.3), radius: 2, x: 0, y: 1))
+        .accessibilityLabel("Trip status: \(status.displayText)")
+        .accessibilityHint("Current trip planning status")
     }
     
     private func iconForStatus(_ status: TripStatusType) -> String {

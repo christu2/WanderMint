@@ -87,7 +87,7 @@ struct TripSubmissionView: View {
             .overlay(
                 Group {
                     if viewModel.isLoading {
-                        LoadingOverlay(message: "Creating your perfect trip...")
+                        TripSubmissionLoadingView()
                     }
                 }
             )
@@ -112,6 +112,14 @@ struct TripSubmissionView: View {
             } message: {
                 Text("Your trip request has been submitted! I'll personally plan your perfect itinerary and you'll be notified when it's ready.")
             }
+            .onAppear {
+                AnalyticsService.shared.trackScreenView(AnalyticsService.ScreenNames.tripSubmission)
+            }
+            .errorRecovery(
+                error: $viewModel.currentError,
+                context: .tripSubmission,
+                onAction: handleRecoveryAction
+            )
         }
     }
     
@@ -156,6 +164,8 @@ struct TripSubmissionView: View {
                         .font(AppTheme.Typography.bodySmall)
                         .foregroundColor(AppTheme.Colors.primary)
                     }
+                    .accessibilityLabel("Add destination")
+                    .accessibilityHint("Add another destination to your trip")
                 }
             }
             
@@ -172,6 +182,8 @@ struct TripSubmissionView: View {
                         .background(Color.white)
                         .cornerRadius(AppTheme.CornerRadius.md)
                         .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                        .accessibilityLabel("Departure location")
+                        .accessibilityHint("Enter your departure city or airport")
                 }
                 
                 // Multiple destination fields
@@ -194,6 +206,8 @@ struct TripSubmissionView: View {
                                 .background(Color.white)
                                 .cornerRadius(AppTheme.CornerRadius.md)
                                 .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                                .accessibilityLabel("Destination \(index + 1)")
+                                .accessibilityHint("Enter travel destination")
                         }
                         
                         if destinations.count > 1 {
@@ -205,6 +219,8 @@ struct TripSubmissionView: View {
                                     .foregroundColor(AppTheme.Colors.error)
                             }
                             .padding(.top, destinations.count > 1 ? AppTheme.Spacing.lg : 0)
+                            .accessibilityLabel("Remove destination \(index + 1)")
+                            .accessibilityHint("Remove this destination from your trip")
                         }
                     }
                 }
@@ -213,6 +229,8 @@ struct TripSubmissionView: View {
                     .toggleStyle(SwitchToggleStyle(tint: AppTheme.Colors.primary))
                     .padding(AppTheme.Spacing.md)
                     .background(Color.white)
+                    .accessibilityLabel("Flexible dates")
+                    .accessibilityHint("Toggle flexible travel dates option")
                     .cornerRadius(AppTheme.CornerRadius.md)
                     .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
                 
@@ -241,6 +259,8 @@ struct TripSubmissionView: View {
                             .background(Color.white)
                             .cornerRadius(AppTheme.CornerRadius.md)
                             .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                            .accessibilityLabel("Trip budget")
+                            .accessibilityHint("Enter your estimated trip budget")
                     }
                     
                     VStack(alignment: .leading) {
@@ -252,6 +272,8 @@ struct TripSubmissionView: View {
                             .background(Color.white)
                             .cornerRadius(AppTheme.CornerRadius.md)
                             .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                            .accessibilityLabel("Group size: \(groupSize) people")
+                            .accessibilityHint("Adjust number of travelers")
                     }
                 }
                 
@@ -352,6 +374,8 @@ struct TripSubmissionView: View {
                 .applyShadow(AppTheme.Shadows.buttonShadow)
             }
             .disabled(!isFormValid || viewModel.isLoading)
+            .accessibilityLabel(viewModel.isLoading ? "Creating trip request" : "Submit trip request")
+            .accessibilityHint("Submit your trip details for planning")
             
             Text("We'll personally craft your perfect itinerary and notify you when it's ready!")
                 .font(AppTheme.Typography.bodySmall)
@@ -436,39 +460,69 @@ struct TripSubmissionView: View {
     }
     
     private var isFormValid: Bool {
-        let destinationsValid = destinations.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-        let departureLocationValid = !departureLocation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        
-        if flexibleDates {
-            return destinationsValid && departureLocationValid && latestStartDate >= earliestStartDate
-        } else {
-            return destinationsValid && departureLocationValid && endDate > startDate
+        // Enhanced validation with content filtering
+        let destinationsValid = destinations.contains { destination in
+            let validation = FormValidation.validateDestinationEnhanced(destination)
+            return validation.isValid
         }
+        
+        let departureValidation = FormValidation.validateDestinationEnhanced(departureLocation)
+        let departureLocationValid = departureValidation.isValid
+        
+        // Budget validation if provided
+        let budgetValid = budget.isEmpty || FormValidation.validateBudgetEnhanced(budget).isValid
+        
+        // Special requests validation if provided
+        let specialRequestsValid = specialRequests.isEmpty || FormValidation.validateMessageEnhanced(specialRequests).isValid
+        
+        let dateValidation: Bool
+        if flexibleDates {
+            dateValidation = latestStartDate >= earliestStartDate
+        } else {
+            dateValidation = endDate > startDate
+        }
+        
+        return destinationsValid && departureLocationValid && budgetValid && specialRequestsValid && dateValidation
     }
     
     private func submitTrip() {
-        // Filter out empty destinations and trim whitespace
+        // Validate and sanitize destinations
         let validDestinations = destinations
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .compactMap { destination in
+                let validation = FormValidation.validateDestinationEnhanced(destination)
+                return validation.value
+            }
             .filter { !$0.isEmpty }
         
         // Use timezone-agnostic date strings to prevent day shifting
         let startDateString = DateUtils.toAPIDateString(flexibleDates ? earliestStartDate : startDate)
         let endDateString = DateUtils.toAPIDateString(flexibleDates ? latestStartDate : endDate)
         
+        // Sanitize other inputs
+        let sanitizedDeparture = FormValidation.validateDestinationEnhanced(departureLocation).value ?? ""
+        let sanitizedBudget = FormValidation.validateBudgetEnhanced(budget).value ?? ""
+        let sanitizedSpecialRequests = FormValidation.validateMessageEnhanced(specialRequests).value ?? ""
+        
         let submission = EnhancedTripSubmission(
             destinations: validDestinations,
-            departureLocation: departureLocation.trimmingCharacters(in: .whitespacesAndNewlines),
+            departureLocation: sanitizedDeparture,
             startDate: startDateString,
             endDate: endDateString,
             flexibleDates: flexibleDates,
             tripDuration: flexibleDates ? tripDuration : nil,
-            budget: budget.isEmpty ? nil : budget,
+            budget: sanitizedBudget.isEmpty ? nil : sanitizedBudget,
             travelStyle: travelStyle,
             groupSize: groupSize,
-            specialRequests: specialRequests.trimmingCharacters(in: .whitespacesAndNewlines),
+            specialRequests: sanitizedSpecialRequests,
             interests: Array(selectedInterests),
             flightClass: nil
+        )
+        
+        // Track trip submission analytics
+        AnalyticsService.shared.trackTripSubmission(
+            destinationCount: destinations.filter { !$0.isEmpty }.count,
+            hasBudget: !budget.isEmpty,
+            flexibleDates: flexibleDates
         )
         
         viewModel.submitTrip(submission)
@@ -489,6 +543,53 @@ struct TripSubmissionView: View {
         latestStartDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
         tripDuration = 7
     }
+    
+    private func handleRecoveryAction(_ action: RecoveryAction) {
+        switch action {
+        case .retry:
+            if isFormValid {
+                submitTrip()
+            }
+        case .editAndResubmit:
+            // Form is already editable, just clear error
+            viewModel.clearError()
+        case .saveDraft:
+            // Save form data locally (implement if needed)
+            saveDraftLocally()
+        case .clearFormAndRestart:
+            clearForm()
+            viewModel.clearError()
+        case .contactSupport:
+            // Open support contact (implement if needed)
+            contactSupport()
+        default:
+            viewModel.clearError()
+        }
+    }
+    
+    private func saveDraftLocally() {
+        // Save current form state to UserDefaults for later recovery
+        let draftData: [String: Any] = [
+            "destinations": destinations,
+            "departureLocation": departureLocation,
+            "budget": budget,
+            "specialRequests": specialRequests,
+            "groupSize": groupSize,
+            "travelStyle": travelStyle
+        ]
+        
+        UserDefaults.standard.set(draftData, forKey: "trip_draft")
+        
+        // Show confirmation
+        // Could show a toast or temporary message
+    }
+    
+    private func contactSupport() {
+        // Open email or support URL
+        if let url = URL(string: "mailto:support@travelconsulting.app?subject=Trip Submission Issue") {
+            UIApplication.shared.open(url)
+        }
+    }
 }
 
 // MARK: - ViewModel
@@ -497,12 +598,14 @@ class TripSubmissionViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var submissionSuccess = false
+    @Published var currentError: Error?
     
     private let tripService = TripService()
     
     func submitTrip(_ submission: EnhancedTripSubmission) {
         isLoading = true
         errorMessage = nil
+        currentError = nil
         
         Task {
             do {
@@ -510,6 +613,10 @@ class TripSubmissionViewModel: ObservableObject {
                 submissionSuccess = true
             } catch {
                 errorMessage = error.localizedDescription
+                currentError = error
+                
+                // Track error for analytics
+                AnalyticsService.shared.trackError(error, context: "TripSubmission")
             }
             isLoading = false
         }
@@ -517,6 +624,7 @@ class TripSubmissionViewModel: ObservableObject {
     
     func clearError() {
         errorMessage = nil
+        currentError = nil
     }
     
     func clearSuccess() {

@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 
 struct ProfileSetupView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
@@ -94,6 +96,8 @@ struct ProfileSetupView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 32)
+        .accessibilityLabel("Step \(currentStep + 1) of 4")
+        .accessibilityHint("Onboarding progress indicator")
     }
     
     private var welcomeStepView: some View {
@@ -146,6 +150,8 @@ struct ProfileSetupView: View {
                     .textInputAutocapitalization(.words)
                     .autocorrectionDisabled()
                     .padding(.horizontal, 24)
+                    .accessibilityLabel("Name input field")
+                    .accessibilityHint("Enter your full name for personalized travel recommendations")
             }
             
             Spacer()
@@ -360,6 +366,10 @@ struct ProfileSetupView: View {
                     try await savePointsData()
                 }
                 
+                // Track onboarding completion
+                let hasPointsData = !creditCardPoints.isEmpty || !hotelPoints.isEmpty || !airlinePoints.isEmpty
+                AnalyticsService.shared.trackOnboardingCompleted(hasPointsData: hasPointsData)
+                
                 // Mark onboarding as complete
                 await authViewModel.completeOnboarding()
                 
@@ -382,7 +392,7 @@ struct ProfileSetupView: View {
             creditCardPoints: creditCardPoints,
             hotelPoints: hotelPoints,
             airlinePoints: airlinePoints,
-            lastUpdated: Timestamp()
+            lastUpdated: createTimestamp()
         )
         
         let db = Firestore.firestore()

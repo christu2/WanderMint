@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 
 // MARK: - Trip Data Parsing Helper
 class TripDataParser {
@@ -33,11 +35,11 @@ class TripDataParser {
         }
         
         // Parse timestamps
-        guard let createdAt = data["createdAt"] as? Timestamp else {
+        guard let createdAt = data["createdAt"] as? AppTimestamp else {
             throw TravelAppError.dataError("Missing createdAt timestamp")
         }
         
-        let updatedAt = data["updatedAt"] as? Timestamp
+        let updatedAt = data["updatedAt"] as? AppTimestamp
         
         // Parse dates
         guard let startDate = parseTimestamp(from: data["startDate"]),
@@ -116,14 +118,14 @@ class TripDataParser {
         )
     }
     
-    private static func parseTimestamp(from data: Any?) -> Timestamp? {
-        if let timestamp = data as? Timestamp {
+    private static func parseTimestamp(from data: Any?) -> AppTimestamp? {
+        if let timestamp = data as? AppTimestamp {
             return timestamp
         } else if let dateString = data as? String {
             // Handle string dates (ISO format)
             let formatter = ISO8601DateFormatter()
             if let date = formatter.date(from: dateString) {
-                return Timestamp(date: date)
+                return createTimestamp(date: date)
             }
         }
         return nil

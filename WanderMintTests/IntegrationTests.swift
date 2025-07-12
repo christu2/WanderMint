@@ -259,4 +259,341 @@ final class IntegrationTests: XCTestCase {
         
         waitForExpectations(timeout: 5.0)
     }
+    
+    // MARK: - Content Filter Integration Tests
+    
+    func testContentFilterIntegration() {
+        let expectation = expectation(description: "Content filter integration")
+        
+        Task {
+            let contentFilter = ContentFilter.shared
+            
+            // Test valid content
+            let validDestination = "Paris, France"
+            let validResult = contentFilter.validateDestination(validDestination)
+            XCTAssertTrue(validResult.isValid)
+            XCTAssertEqual(validResult.value, validDestination)
+            
+            // Test invalid content
+            let invalidDestination = "F*ck this place"
+            let invalidResult = contentFilter.validateDestination(invalidDestination)
+            XCTAssertFalse(invalidResult.isValid)
+            XCTAssertNil(invalidResult.value)
+            
+            // Test enhanced validation
+            let enhancedValidResult = FormValidation.validateDestinationEnhanced(validDestination)
+            XCTAssertTrue(enhancedValidResult.isValid)
+            
+            let enhancedInvalidResult = FormValidation.validateDestinationEnhanced(invalidDestination)
+            XCTAssertFalse(enhancedInvalidResult.isValid)
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Error Recovery Integration Tests
+    
+    func testErrorRecoveryIntegration() {
+        let expectation = expectation(description: "Error recovery integration")
+        
+        Task {
+            let errorRecovery = ErrorRecoveryService.shared
+            
+            // Test network error recovery
+            let networkError = TravelAppError.networkError("Connection failed")
+            let recovery = errorRecovery.getContextualRecovery(for: networkError, context: .tripSubmission)
+            
+            XCTAssertTrue(recovery.actions.contains(.retry))
+            XCTAssertTrue(recovery.actions.contains(.saveDraft))
+            XCTAssertEqual(recovery.contextualMessage, "Your trip details have been saved locally.")
+            
+            // Test authentication error recovery
+            let authError = TravelAppError.authenticationFailed
+            let authRecovery = errorRecovery.getContextualRecovery(for: authError, context: .authentication)
+            
+            XCTAssertTrue(authRecovery.actions.contains(.signInAgain))
+            XCTAssertTrue(authRecovery.actions.contains(.resetPassword))
+            XCTAssertTrue(authRecovery.actions.contains(.createNewAccount))
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Form Validation Integration Tests
+    
+    func testFormValidationIntegration() {
+        let expectation = expectation(description: "Form validation integration")
+        
+        Task {
+            // Test complete form validation
+            let destinations = ["Paris", "London", "Rome"]
+            let departureLocation = "New York"
+            let startDate = Date().addingTimeInterval(86400) // Tomorrow
+            let endDate = Date().addingTimeInterval(86400 * 8) // 8 days from now
+            let groupSize = 2
+            let budget = "5000"
+            
+            let destinationResult = FormValidation.Trip.validateDestinations(destinations)
+            XCTAssertEqual(destinationResult, .valid)
+            
+            let departureResult = FormValidation.Trip.validateDepartureLocation(departureLocation)
+            XCTAssertEqual(departureResult, .valid)
+            
+            let dateResult = FormValidation.Trip.validateDates(start: startDate, end: endDate)
+            XCTAssertEqual(dateResult, .valid)
+            
+            let groupSizeResult = FormValidation.Trip.validateGroupSize(groupSize)
+            XCTAssertEqual(groupSizeResult, .valid)
+            
+            let budgetResult = FormValidation.Trip.validateBudget(budget)
+            XCTAssertEqual(budgetResult, .valid)
+            
+            // Test validation state
+            var validationState = ValidationState()
+            validationState.destinations = destinationResult
+            validationState.departureLocation = departureResult
+            validationState.dates = dateResult
+            validationState.groupSize = groupSizeResult
+            validationState.budget = budgetResult
+            
+            XCTAssertTrue(validationState.isFormValid)
+            XCTAssertNil(validationState.firstError)
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Haptic Feedback Integration Tests
+    
+    func testHapticFeedbackIntegration() {
+        let expectation = expectation(description: "Haptic feedback integration")
+        
+        Task {
+            let hapticService = HapticFeedbackService.shared
+            
+            // Test travel app specific haptic feedback
+            XCTAssertNoThrow(hapticService.tripSubmitted())
+            XCTAssertNoThrow(hapticService.destinationAdded())
+            XCTAssertNoThrow(hapticService.destinationRemoved())
+            XCTAssertNoThrow(hapticService.pointsAdded())
+            XCTAssertNoThrow(hapticService.messageSent())
+            XCTAssertNoThrow(hapticService.authenticationSuccess())
+            XCTAssertNoThrow(hapticService.authenticationFailure())
+            
+            // Test context-specific feedback
+            XCTAssertNoThrow(hapticService.formSubmission())
+            XCTAssertNoThrow(hapticService.validationError())
+            XCTAssertNoThrow(hapticService.operationSuccess())
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Keyboard Handling Integration Tests
+    
+    func testKeyboardHandlingIntegration() {
+        let expectation = expectation(description: "Keyboard handling integration")
+        
+        Task {
+            let keyboardHandler = KeyboardHandler()
+            let focusCoordinator = FocusCoordinator()
+            
+            // Test initial state
+            XCTAssertEqual(keyboardHandler.keyboardHeight, 0)
+            XCTAssertFalse(keyboardHandler.isKeyboardVisible)
+            XCTAssertNil(focusCoordinator.currentFocus)
+            
+            // Test focus management
+            focusCoordinator.focus(.departureLocation)
+            XCTAssertEqual(focusCoordinator.currentFocus, .departureLocation)
+            
+            focusCoordinator.nextField(.departureLocation)
+            XCTAssertEqual(focusCoordinator.currentFocus, .destination(0))
+            
+            focusCoordinator.nextField(.destination(0))
+            XCTAssertEqual(focusCoordinator.currentFocus, .budget)
+            
+            focusCoordinator.clearFocus()
+            XCTAssertNil(focusCoordinator.currentFocus)
+            
+            // Test keyboard dismissal
+            XCTAssertNoThrow(keyboardHandler.dismissKeyboard())
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Device Testing Integration Tests
+    
+    func testDeviceTestingIntegration() {
+        let expectation = expectation(description: "Device testing integration")
+        
+        Task {
+            // Test device size detection
+            let currentDevice = DeviceTestingUtils.currentDevice
+            let validDeviceSizes: [DeviceTestingUtils.DeviceSize] = [.compact, .regular, .large, .tablet]
+            XCTAssertTrue(validDeviceSizes.contains(currentDevice))
+            
+            // Test layout helpers
+            let compactSize = CGSize(width: 350, height: 600)
+            let regularSize = CGSize(width: 400, height: 800)
+            
+            XCTAssertTrue(DeviceTestingUtils.shouldUseCompactLayout(compactSize))
+            XCTAssertFalse(DeviceTestingUtils.shouldUseCompactLayout(regularSize))
+            
+            // Test safe area insets
+            let compactSafeArea = DeviceTestingUtils.safeAreaInsets(for: .compact)
+            let regularSafeArea = DeviceTestingUtils.safeAreaInsets(for: .regular)
+            
+            XCTAssertNotEqual(compactSafeArea.top, regularSafeArea.top)
+            XCTAssertNotEqual(compactSafeArea.bottom, regularSafeArea.bottom)
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Complete User Flow Integration Tests
+    
+    func testCompleteUserFlowIntegration() {
+        let expectation = expectation(description: "Complete user flow integration")
+        
+        Task {
+            let contentFilter = ContentFilter.shared
+            let analytics = AnalyticsService.shared
+            let hapticService = HapticFeedbackService.shared
+            let keyboardHandler = KeyboardHandler()
+            
+            // Simulate complete user flow
+            XCTAssertNoThrow {
+                // 1. User navigates to trip submission
+                analytics.trackScreenView("trip_submission")
+                hapticService.navigation()
+                
+                // 2. User enters destination
+                let destination = "Paris, France"
+                let destinationValidation = contentFilter.validateDestination(destination)
+                XCTAssertTrue(destinationValidation.isValid)
+                hapticService.destinationAdded()
+                
+                // 3. User enters departure location
+                let departure = "New York"
+                let departureValidation = FormValidation.Trip.validateDepartureLocation(departure)
+                XCTAssertEqual(departureValidation, .valid)
+                
+                // 4. User submits form
+                hapticService.formSubmission()
+                keyboardHandler.dismissKeyboard()
+                
+                // 5. Submission succeeds
+                analytics.trackTripSubmission(destinationCount: 1, hasBudget: false, flexibleDates: false)
+                hapticService.tripSubmitted()
+            }
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Error Flow Integration Tests
+    
+    func testErrorFlowIntegration() {
+        let expectation = expectation(description: "Error flow integration")
+        
+        Task {
+            let contentFilter = ContentFilter.shared
+            let errorRecovery = ErrorRecoveryService.shared
+            let analytics = AnalyticsService.shared
+            let hapticService = HapticFeedbackService.shared
+            
+            // Simulate error flow
+            XCTAssertNoThrow {
+                // 1. User enters invalid destination
+                let invalidDestination = "F*ck this place"
+                let destinationValidation = contentFilter.validateDestination(invalidDestination)
+                XCTAssertFalse(destinationValidation.isValid)
+                hapticService.validationError()
+                
+                // 2. User corrects and resubmits
+                let validDestination = "Paris, France"
+                let correctedValidation = contentFilter.validateDestination(validDestination)
+                XCTAssertTrue(correctedValidation.isValid)
+                
+                // 3. Network error occurs during submission
+                let networkError = TravelAppError.networkError("Connection failed")
+                let recovery = errorRecovery.getContextualRecovery(for: networkError, context: .tripSubmission)
+                analytics.trackError(networkError, context: "TripSubmission")
+                hapticService.errorOccurred()
+                
+                // 4. User retries
+                XCTAssertTrue(recovery.actions.contains(.retry))
+                hapticService.buttonTap()
+                
+                // 5. Retry succeeds
+                analytics.trackTripSubmission(destinationCount: 1, hasBudget: false, flexibleDates: false)
+                hapticService.operationSuccess()
+            }
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 5.0)
+    }
+    
+    // MARK: - Performance Integration Tests
+    
+    func testPerformanceIntegration() {
+        let expectation = expectation(description: "Performance integration")
+        
+        Task {
+            let contentFilter = ContentFilter.shared
+            let errorRecovery = ErrorRecoveryService.shared
+            let analytics = AnalyticsService.shared
+            let hapticService = HapticFeedbackService.shared
+            
+            // Test performance with all systems
+            let startTime = Date()
+            
+            for i in 0..<100 {
+                // Test content filtering
+                let destination = "Destination \(i)"
+                _ = contentFilter.validateDestination(destination)
+                
+                // Test error recovery
+                let error = TravelAppError.networkError("Test error \(i)")
+                _ = errorRecovery.getErrorRecovery(for: error)
+                
+                // Test analytics
+                analytics.trackCustomEvent("test_event", parameters: ["index": i])
+                
+                // Test haptic feedback
+                hapticService.lightImpact()
+                
+                // Test form validation
+                _ = FormValidation.isValidEmail("test\(i)@example.com")
+            }
+            
+            let endTime = Date()
+            let duration = endTime.timeIntervalSince(startTime)
+            
+            // Should complete within reasonable time (5 seconds for 100 iterations)
+            XCTAssertLessThan(duration, 5.0)
+            
+            expectation.fulfill()
+        }
+        
+        waitForExpectations(timeout: 10.0)
+    }
 }

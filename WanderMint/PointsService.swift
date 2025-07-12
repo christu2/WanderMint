@@ -7,15 +7,24 @@
 
 
 import Foundation
+#if canImport(Firebase)
 import Firebase
+#endif
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 
 @MainActor
 class PointsService: ObservableObject {
+    #if canImport(FirebaseFirestore)
     private let db = Firestore.firestore()
+    #endif
     
     func getUserPointsProfile() async throws -> UserPointsProfile? {
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
         guard let user = Auth.auth().currentUser else {
             throw TravelAppError.authenticationFailed
         }
@@ -31,9 +40,13 @@ class PointsService: ObservableObject {
         } catch {
             throw TravelAppError.dataError(error.localizedDescription)
         }
+        #else
+        return nil
+        #endif
     }
     
     func updatePoints(provider: String, type: PointsType, amount: Int) async throws {
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
         guard let user = Auth.auth().currentUser else {
             throw TravelAppError.authenticationFailed
         }
@@ -69,9 +82,13 @@ class PointsService: ObservableObject {
         } catch {
             throw TravelAppError.dataError(error.localizedDescription)
         }
+        #else
+        throw TravelAppError.authenticationFailed
+        #endif
     }
     
     func removePoints(provider: String, type: PointsType) async throws {
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
         guard let user = Auth.auth().currentUser else {
             throw TravelAppError.authenticationFailed
         }
@@ -87,13 +104,17 @@ class PointsService: ObservableObject {
         } catch {
             throw TravelAppError.dataError(error.localizedDescription)
         }
+        #else
+        throw TravelAppError.authenticationFailed
+        #endif
     }
     
     private func parsePointsProfile(from data: [String: Any], userId: String) throws -> UserPointsProfile {
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
         let creditCardPoints = data["creditCardPoints"] as? [String: Int] ?? [:]
         let hotelPoints = data["hotelPoints"] as? [String: Int] ?? [:]
         let airlinePoints = data["airlinePoints"] as? [String: Int] ?? [:]
-        let lastUpdated = data["lastUpdated"] as? Timestamp ?? Timestamp()
+        let lastUpdated = data["lastUpdated"] as? AppTimestamp ?? createTimestamp()
         
         return UserPointsProfile(
             userId: userId,
@@ -102,5 +123,8 @@ class PointsService: ObservableObject {
             airlinePoints: airlinePoints,
             lastUpdated: lastUpdated
         )
+        #else
+        throw TravelAppError.authenticationFailed
+        #endif
     }
 }

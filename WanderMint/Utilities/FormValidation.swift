@@ -8,6 +8,10 @@ struct FormValidation {
     /// Validate email format
     static func isValidEmail(_ email: String) -> Bool {
         guard !email.isEmpty else { return false }
+        
+        // Check for whitespace characters (emails shouldn't contain spaces)
+        guard !email.contains(" ") && !email.contains("\t") && !email.contains("\n") else { return false }
+        
         let emailComponents = email.components(separatedBy: "@")
         guard emailComponents.count == 2 else { return false }
         let local = emailComponents[0]
@@ -76,25 +80,27 @@ struct FormValidation {
     /// Sanitize input by removing potentially harmful characters
     static func sanitizeInput(_ input: String) -> String {
         return input
-            .replacingOccurrences(of: "<", with: "")
-            .replacingOccurrences(of: ">", with: "")
+            // Remove HTML/script tags first
+            .replacingOccurrences(of: #"<[^>]*>"#, with: "", options: .regularExpression)
+            // Then remove remaining problematic characters
             .replacingOccurrences(of: "&", with: "")
-            .replacingOccurrences(of: "script", with: "")
+            .replacingOccurrences(of: ">", with: "")
+            .replacingOccurrences(of: "script", with: "", options: .caseInsensitive)
     }
     
     // MARK: - Trip Validation
     struct Trip {
         
         /// Validate destinations array
-        static func validateDestinations(_ destinations: [String]) -> ValidationResult {
+        static func validateDestinations(_ destinations: [String]) -> FormValidationResult {
             let nonEmptyDestinations = destinations.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             
             if nonEmptyDestinations.isEmpty {
                 return .invalid("Please enter at least one destination")
             }
             
-            if nonEmptyDestinations.count > AppConfig.Limits.maxDestinationsPerTrip {
-                return .invalid("Maximum \(AppConfig.Limits.maxDestinationsPerTrip) destinations allowed")
+            if nonEmptyDestinations.count > 10 {
+                return .invalid("Maximum 10 destinations allowed")
             }
             
             // Check for duplicate destinations
@@ -107,7 +113,7 @@ struct FormValidation {
         }
         
         /// Validate departure location
-        static func validateDepartureLocation(_ location: String) -> ValidationResult {
+        static func validateDepartureLocation(_ location: String) -> FormValidationResult {
             let trimmed = location.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty {
                 return .invalid("Please enter your departure location")
@@ -119,7 +125,7 @@ struct FormValidation {
         }
         
         /// Validate trip dates
-        static func validateDates(start: Date, end: Date) -> ValidationResult {
+        static func validateDates(start: Date, end: Date) -> FormValidationResult {
             let calendar = Calendar.current
             let today = calendar.startOfDay(for: Date())
             let startDay = calendar.startOfDay(for: start)
@@ -151,18 +157,18 @@ struct FormValidation {
         }
         
         /// Validate group size
-        static func validateGroupSize(_ size: Int) -> ValidationResult {
+        static func validateGroupSize(_ size: Int) -> FormValidationResult {
             if size < 1 {
                 return .invalid("Group size must be at least 1 person")
             }
-            if size > AppConfig.Limits.maxGroupSize {
-                return .invalid("Maximum group size is \(AppConfig.Limits.maxGroupSize) people")
+            if size > 20 {
+                return .invalid("Maximum group size is 20 people")
             }
             return .valid
         }
         
         /// Validate budget string
-        static func validateBudget(_ budget: String) -> ValidationResult {
+        static func validateBudget(_ budget: String) -> FormValidationResult {
             let trimmed = budget.trimmingCharacters(in: .whitespacesAndNewlines)
             
             // Budget is optional, so empty is valid
@@ -185,7 +191,7 @@ struct FormValidation {
         }
         
         /// Validate flexible dates configuration
-        static func validateFlexibleDates(earliest: Date, latest: Date, duration: Int) -> ValidationResult {
+        static func validateFlexibleDates(earliest: Date, latest: Date, duration: Int) -> FormValidationResult {
             let calendar = Calendar.current
             let today = calendar.startOfDay(for: Date())
             let earliestDay = calendar.startOfDay(for: earliest)
@@ -212,8 +218,8 @@ struct FormValidation {
     }
 }
 
-// MARK: - Validation Result
-enum ValidationResult {
+// MARK: - Form Validation Result
+enum FormValidationResult: Equatable {
     case valid
     case invalid(String)
     
@@ -236,14 +242,105 @@ enum ValidationResult {
     }
 }
 
+// MARK: - Validation Result for Enhanced Validation
+struct ValidationResult {
+    let isValid: Bool
+    let value: String?
+    let errorMessage: String?
+    
+    init(isValid: Bool, value: String? = nil, errorMessage: String? = nil) {
+        self.isValid = isValid
+        self.value = value
+        self.errorMessage = errorMessage
+    }
+    
+    static func valid(value: String) -> ValidationResult {
+        return ValidationResult(isValid: true, value: value, errorMessage: nil)
+    }
+    
+    static func invalid(message: String) -> ValidationResult {
+        return ValidationResult(isValid: false, value: nil, errorMessage: message)
+    }
+}
+
+// MARK: - Enhanced Validation with Content Filtering
+extension FormValidation {
+    
+    /// Enhanced destination validation with content filtering
+    static func validateDestinationEnhanced(_ destination: String) -> ValidationResult {
+        // Basic validation first
+        guard isValidDestination(destination) else {
+            return ValidationResult.invalid(message: "Destination must be at least 2 characters")
+        }
+        
+        // Use ContentFilter for enhanced validation
+        let contentFilter = ContentFilter.shared
+        let contentResult = contentFilter.validateDestination(destination)
+        
+        // Convert ContentFilterResult to ValidationResult
+        switch contentResult {
+        case .valid(let value):
+            return ValidationResult.valid(value: value)
+        case .invalid(let message):
+            return ValidationResult.invalid(message: message)
+        }
+    }
+    
+    /// Enhanced message validation with content filtering
+    static func validateMessageEnhanced(_ message: String) -> ValidationResult {
+        let trimmed = trimWhitespace(message)
+        guard !trimmed.isEmpty else {
+            return ValidationResult.invalid(message: "Message cannot be empty")
+        }
+        
+        guard trimmed.count <= 1000 else {
+            return ValidationResult.invalid(message: "Message too long (max 1000 characters)")
+        }
+        
+        return ValidationResult.valid(value: sanitizeInput(trimmed))
+    }
+    
+    /// Enhanced name validation with content filtering
+    static func validateNameEnhanced(_ name: String) -> ValidationResult {
+        guard isValidName(name) else {
+            return ValidationResult.invalid(message: "Please enter a valid name")
+        }
+        
+        return ValidationResult.valid(value: trimWhitespace(name))
+    }
+    
+    /// Enhanced budget validation with content filtering
+    static func validateBudgetEnhanced(_ budget: String) -> ValidationResult {
+        let trimmed = trimWhitespace(budget)
+        
+        // Empty budget is valid (optional field)
+        if trimmed.isEmpty {
+            return ValidationResult.valid(value: "")
+        }
+        
+        // Check if it's a valid number
+        if let budgetValue = Double(trimmed.replacingOccurrences(of: "$", with: "").replacingOccurrences(of: ",", with: "")) {
+            if budgetValue < 0 {
+                return ValidationResult.invalid(message: "Budget cannot be negative")
+            }
+            if budgetValue > 1_000_000 {
+                return ValidationResult.invalid(message: "Budget seems unreasonably high")
+            }
+            return ValidationResult.valid(value: trimmed)
+        }
+        
+        return ValidationResult.invalid(message: "Please enter a valid budget amount")
+    }
+}
+
 // MARK: - Validation State
 struct ValidationState {
-    var destinations: ValidationResult = .valid
-    var departureLocation: ValidationResult = .valid
-    var dates: ValidationResult = .valid
-    var groupSize: ValidationResult = .valid
-    var budget: ValidationResult = .valid
-    var flexibleDates: ValidationResult = .valid
+    var destinations: FormValidationResult = .valid
+    var departureLocation: FormValidationResult = .valid
+    var dates: FormValidationResult = .valid
+    var groupSize: FormValidationResult = .valid
+    var budget: FormValidationResult = .valid
+    var flexibleDates: FormValidationResult = .valid
     
     var isFormValid: Bool {
         return destinations.isValid &&

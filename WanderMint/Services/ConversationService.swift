@@ -1,6 +1,10 @@
 import Foundation
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
 
 @MainActor
 class ConversationService: ObservableObject {
@@ -34,8 +38,8 @@ class ConversationService: ObservableObject {
             userId: user.uid,
             messages: [],
             status: .active,
-            createdAt: Timestamp(),
-            lastMessageAt: Timestamp(),
+            createdAt: createTimestamp(),
+            lastMessageAt: createTimestamp(),
             unreadAdminCount: 0,
             unreadUserCount: 0
         )
@@ -66,7 +70,7 @@ class ConversationService: ObservableObject {
             messageType: messageType,
             content: content,
             attachments: nil,
-            timestamp: Timestamp(),
+            timestamp: createTimestamp(),
             isRead: false,
             metadata: metadata
         )
@@ -84,7 +88,7 @@ class ConversationService: ObservableObject {
         try await db.collection("tripConversations")
             .document(conversationId)
             .updateData([
-                "lastMessageAt": Timestamp(),
+                "lastMessageAt": createTimestamp(),
                 "status": TripConversation.ConversationStatus.needsResponse.rawValue,
                 "unreadAdminCount": FieldValue.increment(Int64(1))
             ])
@@ -199,7 +203,7 @@ class ConversationService: ObservableObject {
             messageType: .text,
             content: content,
             attachments: nil,
-            timestamp: Timestamp(),
+            timestamp: createTimestamp(),
             isRead: false,
             metadata: nil
         )
@@ -217,7 +221,7 @@ class ConversationService: ObservableObject {
         try await db.collection("tripConversations")
             .document(conversationId)
             .updateData([
-                "lastMessageAt": Timestamp(),
+                "lastMessageAt": createTimestamp(),
                 "status": newStatus.rawValue,
                 "unreadUserCount": FieldValue.increment(Int64(1)),
                 "unreadAdminCount": 0
@@ -234,7 +238,7 @@ class ConversationService: ObservableObject {
             "type": "new_user_message",
             "conversationId": conversationId,
             "preview": String(messageContent.prefix(100)),
-            "timestamp": Timestamp(),
+            "timestamp": createTimestamp(),
             "isRead": false
         ]
         
@@ -250,8 +254,8 @@ class ConversationService: ObservableObject {
             userId: data["userId"] as? String ?? "",
             messages: [], // Messages loaded separately
             status: TripConversation.ConversationStatus(rawValue: data["status"] as? String ?? "active") ?? .active,
-            createdAt: data["createdAt"] as? Timestamp ?? Timestamp(),
-            lastMessageAt: data["lastMessageAt"] as? Timestamp ?? Timestamp(),
+            createdAt: data["createdAt"] as? AppTimestamp ?? createTimestamp(),
+            lastMessageAt: data["lastMessageAt"] as? AppTimestamp ?? createTimestamp(),
             unreadAdminCount: data["unreadAdminCount"] as? Int ?? 0,
             unreadUserCount: data["unreadUserCount"] as? Int ?? 0
         )
@@ -266,7 +270,7 @@ class ConversationService: ObservableObject {
             messageType: ConversationMessage.MessageType(rawValue: data["messageType"] as? String ?? "text") ?? .text,
             content: data["content"] as? String ?? "",
             attachments: nil, // TODO: Parse attachments if needed
-            timestamp: data["timestamp"] as? Timestamp ?? Timestamp(),
+            timestamp: data["timestamp"] as? AppTimestamp ?? createTimestamp(),
             isRead: data["isRead"] as? Bool ?? false,
             metadata: parseMessageMetadata(from: data["metadata"] as? [String: Any])
         )

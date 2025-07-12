@@ -13,13 +13,17 @@ struct MainTabView: View {
                     Text("New Trip")
                 }
                 .tag(0)
+                .accessibilityHint("Create a new trip request")
             
-            TripsListView(selectedTab: $selectedTab)
-                .tabItem {
-                    Image(systemName: "list.bullet.rectangle.fill")
-                    Text("My Trips")
-                }
-                .tag(1)
+            NavigationStack {
+                TripsListView(selectedTab: $selectedTab)
+            }
+            .tabItem {
+                Image(systemName: "list.bullet.rectangle.fill")
+                Text("My Trips")
+            }
+            .tag(1)
+            .accessibilityHint("View your planned trips")
             
             ProfileView()
                 .tabItem {
@@ -27,10 +31,11 @@ struct MainTabView: View {
                     Text("Profile")
                 }
                 .tag(2)
+                .accessibilityHint("Manage your profile and settings")
         }
         .accentColor(AppTheme.Colors.primary)
         .onReceive(notificationService.$pendingTripId) { tripId in
-            if let tripId = tripId {
+            if tripId != nil {
                 // Switch to trips tab and navigate to specific trip
                 selectedTab = 1
                 // The TripsListView will handle navigation to the specific trip

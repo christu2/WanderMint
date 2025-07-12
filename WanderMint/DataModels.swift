@@ -1,5 +1,7 @@
 import Foundation
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 
 // MARK: - Enhanced Trip Submission Model (Updated)
 struct EnhancedTripSubmission: Codable {
@@ -29,11 +31,11 @@ struct UserProfile: Codable {
     let userId: String
     var name: String
     var email: String
-    var createdAt: Timestamp
-    var lastLoginAt: Timestamp
+    var createdAt: AppTimestamp
+    var lastLoginAt: AppTimestamp
     var profilePictureUrl: String?
     var onboardingCompleted: Bool
-    var onboardingCompletedAt: Timestamp?
+    var onboardingCompletedAt: AppTimestamp?
     
     enum CodingKeys: String, CodingKey {
         case userId, name, email, createdAt, lastLoginAt, profilePictureUrl, onboardingCompleted, onboardingCompletedAt
@@ -46,7 +48,7 @@ struct UserPointsProfile: Codable {
     var creditCardPoints: [String: Int] // "Amex": 50000, "Chase": 75000
     var hotelPoints: [String: Int] // "Hyatt": 25000, "Hilton": 40000
     var airlinePoints: [String: Int] // "United": 30000, "Delta": 15000
-    var lastUpdated: Timestamp
+    var lastUpdated: AppTimestamp
     
     enum CodingKeys: String, CodingKey {
         case userId, creditCardPoints, hotelPoints, airlinePoints, lastUpdated
@@ -93,13 +95,13 @@ struct TravelTrip: Identifiable, Codable {
     let destination: String?     // Keep for backward compatibility
     let destinations: [String]?  // New field for multiple destinations
     let departureLocation: String? // New field for departure location
-    let startDate: Timestamp
-    let endDate: Timestamp
+    let startDate: AppTimestamp
+    let endDate: AppTimestamp
     let paymentMethod: String?   // Optional for backward compatibility
     let flexibleDates: Bool
     let status: TripStatusType
-    let createdAt: Timestamp
-    let updatedAt: Timestamp?
+    let createdAt: AppTimestamp
+    let updatedAt: AppTimestamp?
     let recommendation: Recommendation?              // Legacy format (deprecated)
     let destinationRecommendation: AdminDestinationBasedRecommendation?  // Admin-compatible format
     let flightClass: String?     // New field
@@ -221,14 +223,14 @@ struct Recommendation: Identifiable, Codable {
     let estimatedCost: CostBreakdown
     let bestTimeToVisit: String
     let tips: [String]
-    let createdAt: Timestamp?
+    let createdAt: AppTimestamp?
     
     enum CodingKeys: String, CodingKey {
         case id, destination, overview, itinerary, activities, accommodations, transportation, estimatedCost, bestTimeToVisit, tips, createdAt
     }
     
     // Initialize with default values for simple text recommendations
-    init(id: String, destination: String, overview: String, createdAt: Timestamp? = nil) {
+    init(id: String, destination: String, overview: String, createdAt: AppTimestamp? = nil) {
         self.id = id
         self.destination = destination
         self.overview = overview
@@ -243,7 +245,7 @@ struct Recommendation: Identifiable, Codable {
     }
     
     // Full initializer for complex recommendations
-    init(id: String, destination: String, overview: String, itinerary: DetailedItinerary?, activities: [Activity], accommodations: [Accommodation], transportation: TransportationInfo?, estimatedCost: CostBreakdown, bestTimeToVisit: String, tips: [String], createdAt: Timestamp?) {
+    init(id: String, destination: String, overview: String, itinerary: DetailedItinerary?, activities: [Activity], accommodations: [Accommodation], transportation: TransportationInfo?, estimatedCost: CostBreakdown, bestTimeToVisit: String, tips: [String], createdAt: AppTimestamp?) {
         self.id = id
         self.destination = destination
         self.overview = overview
@@ -265,7 +267,7 @@ struct DestinationBasedRecommendation: Identifiable, Codable {
     let destinations: [DestinationRecommendation]
     let logistics: LogisticsRecommendation
     let totalCost: CostBreakdown
-    let createdAt: Timestamp?
+    let createdAt: AppTimestamp?
     
     enum CodingKeys: String, CodingKey {
         case id, tripOverview, destinations, logistics, totalCost, createdAt

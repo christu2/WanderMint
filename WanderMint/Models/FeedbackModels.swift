@@ -1,5 +1,4 @@
 import Foundation
-import FirebaseFirestore
 
 // MARK: - Trip Conversation Models
 
@@ -9,8 +8,8 @@ struct TripConversation: Identifiable, Codable {
     let userId: String
     let messages: [ConversationMessage]
     let status: ConversationStatus
-    let createdAt: Timestamp
-    let lastMessageAt: Timestamp
+    let createdAt: AppTimestamp
+    let lastMessageAt: AppTimestamp
     let unreadAdminCount: Int // Messages admin hasn't read
     let unreadUserCount: Int  // Messages user hasn't read
     
@@ -30,7 +29,7 @@ struct ConversationMessage: Identifiable, Codable {
     let messageType: MessageType
     let content: String
     let attachments: [MessageAttachment]?
-    let timestamp: Timestamp
+    let timestamp: AppTimestamp
     let isRead: Bool
     let metadata: MessageMetadata?
     

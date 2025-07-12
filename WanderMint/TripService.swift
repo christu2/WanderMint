@@ -1,12 +1,20 @@
 import Foundation
+#if canImport(Firebase)
 import Firebase
+#endif
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 import os.log
 
 @MainActor
 class TripService: ObservableObject {
+    #if canImport(FirebaseFirestore)
     private let db = Firestore.firestore()
+    #endif
     @Published var networkMonitor = NetworkMonitor()
     
     // MARK: - Submit Enhanced Trip
@@ -95,6 +103,9 @@ class TripService: ObservableObject {
                 throw TravelAppError.submissionFailed(errorMessage)
             }
         } catch {
+            // Track error for analytics
+            AnalyticsService.shared.trackError(error, context: "TripService")
+            
             if error is TravelAppError {
                 throw error
             } else if let urlError = error as? URLError {
@@ -185,6 +196,9 @@ class TripService: ObservableObject {
                 throw TravelAppError.submissionFailed(errorMessage)
             }
         } catch {
+            // Track error for analytics
+            AnalyticsService.shared.trackError(error, context: "TripService")
+            
             if error is TravelAppError {
                 throw error
             } else if let urlError = error as? URLError {
@@ -358,19 +372,19 @@ class TripService: ObservableObject {
         }
         
         // Parse timestamps (these should still be timestamps from Firestore)
-        guard let startDate = data["startDate"] as? Timestamp else {
+        guard let startDate = data["startDate"] as? AppTimestamp else {
             throw TravelAppError.dataError("Missing or invalid start date")
         }
         
-        guard let endDate = data["endDate"] as? Timestamp else {
+        guard let endDate = data["endDate"] as? AppTimestamp else {
             throw TravelAppError.dataError("Missing or invalid end date")
         }
         
-        guard let createdAt = data["createdAt"] as? Timestamp else {
+        guard let createdAt = data["createdAt"] as? AppTimestamp else {
             throw TravelAppError.dataError("Missing or invalid created date")
         }
         
-        let updatedAt = data["updatedAt"] as? Timestamp
+        let updatedAt = data["updatedAt"] as? AppTimestamp
         
         // Parse new fields
         let flightClass = data["flightClass"] as? String
@@ -426,7 +440,7 @@ class TripService: ObservableObject {
               let overview = data["overview"] as? String,
               let bestTimeToVisit = data["bestTimeToVisit"] as? String,
               let tips = data["tips"] as? [String],
-              let createdAt = data["createdAt"] as? Timestamp else {
+              let createdAt = data["createdAt"] as? AppTimestamp else {
             throw TravelAppError.dataError("Invalid recommendation data structure")
         }
         
@@ -1584,7 +1598,7 @@ class TripService: ObservableObject {
         
         let updateData: [String: Any] = [
             "recommendation.itinerary.flights": flightsArray,
-            "updatedAt": Timestamp()
+            "updatedAt": createTimestamp()
         ]
         
         try await tripRef.updateData(updateData)
@@ -1602,9 +1616,50 @@ class TripService: ObservableObject {
             "recommendation.itinerary.accommodations.\(accommodationIndex).isBooked": isBooked,
             "recommendation.itinerary.accommodations.\(accommodationIndex).bookingReference": bookingReference,
             "recommendation.itinerary.accommodations.\(accommodationIndex).bookedDate": bookedDate,
-            "updatedAt": Timestamp()
+            "updatedAt": createTimestamp()
         ]
         
         try await tripRef.updateData(updateData)
+    }
+    
+    // MARK: - Delete Trip
+    func deleteTrip(tripId: String) async throws {
+        #if canImport(FirebaseFirestore) && canImport(FirebaseAuth)
+        guard let user = Auth.auth().currentUser else {
+            throw TravelAppError.authenticationFailed
+        }
+        
+        let tripRef = db.collection("trips").document(tripId)
+        
+        // Verify the trip belongs to the current user before deleting
+        do {
+            let document = try await tripRef.getDocument()
+            guard document.exists,
+                  let data = document.data(),
+                  let tripUserId = data["userId"] as? String,
+                  tripUserId == user.uid else {
+                throw TravelAppError.dataError("Trip not found or access denied")
+            }
+            
+            try await tripRef.delete()
+            
+            // Track analytics
+            AnalyticsService.shared.trackCustomEvent("trip_deleted", parameters: [
+                "trip_id": tripId,
+                "user_id": user.uid
+            ])
+            
+        } catch {
+            AnalyticsService.shared.trackError(error, context: "TripService.deleteTrip")
+            
+            if error is TravelAppError {
+                throw error
+            } else {
+                throw TravelAppError.dataError("Failed to delete trip: \(error.localizedDescription)")
+            }
+        }
+        #else
+        throw TravelAppError.authenticationFailed
+        #endif
     }
 }

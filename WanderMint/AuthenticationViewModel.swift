@@ -7,8 +7,12 @@
 
 
 import Foundation
+#if canImport(Firebase)
 import Firebase
+#endif
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
 
 @MainActor
 class AuthenticationViewModel: ObservableObject {

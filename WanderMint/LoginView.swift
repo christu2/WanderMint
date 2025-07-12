@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
 
 struct LoginView: View {
     @State private var email: String = ""

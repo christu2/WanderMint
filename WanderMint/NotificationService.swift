@@ -1,16 +1,24 @@
 import Foundation
 import UserNotifications
+#if canImport(Firebase)
 import Firebase
+#endif
+#if canImport(FirebaseAuth)
 import FirebaseAuth
+#endif
+#if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
 
 @MainActor
 class NotificationService: NSObject, ObservableObject {
     static let shared = NotificationService()
     
+    #if canImport(FirebaseFirestore)
     private let db = Firestore.firestore()
     private var tripListeners: [String: ListenerRegistration] = [:]
     private var conversationListeners: [String: ListenerRegistration] = [:]
+    #endif
     private let center = UNUserNotificationCenter.current()
     
     @Published var hasNotificationPermission = false
@@ -46,7 +54,11 @@ class NotificationService: NSObject, ObservableObject {
     // MARK: - Setup and Teardown
     
     func startListening() async {
+        #if canImport(FirebaseAuth)
         guard let user = Auth.auth().currentUser else { return }
+        #else
+        return // No Firebase auth available
+        #endif
         
         await checkPermissionStatus()
         
@@ -54,14 +66,17 @@ class NotificationService: NSObject, ObservableObject {
             await requestPermission()
         }
         
+        #if canImport(FirebaseFirestore)
         // Start listening to user's trips for status changes
         await startListeningToTripUpdates(userId: user.uid)
         
         // Start listening to conversations for new admin messages
         await startListeningToConversationUpdates(userId: user.uid)
+        #endif
     }
     
     func stopListening() {
+        #if canImport(FirebaseFirestore)
         // Remove all listeners
         for listener in tripListeners.values {
             listener.remove()
@@ -72,10 +87,12 @@ class NotificationService: NSObject, ObservableObject {
             listener.remove()
         }
         conversationListeners.removeAll()
+        #endif
     }
     
     // MARK: - Trip Status Notifications
     
+    #if canImport(FirebaseFirestore)
     private func startListeningToTripUpdates(userId: String) async {
         let tripsQuery = db.collection("trips")
             .whereField("userId", isEqualTo: userId)
@@ -114,7 +131,7 @@ class NotificationService: NSObject, ObservableObject {
     
     private func checkForItineraryUpdate(documentData: [String: Any], tripId: String) async {
         // Check if trip has a recommendation/itinerary and was recently updated
-        guard let updatedAt = documentData["updatedAt"] as? Timestamp,
+        guard let updatedAt = documentData["updatedAt"] as? AppTimestamp,
               let statusString = documentData["status"] as? String,
               statusString == "completed" else { return }
         
@@ -304,6 +321,7 @@ class NotificationService: NSObject, ObservableObject {
             break
         }
     }
+    #endif
     
     func clearPendingNavigation() {
         pendingTripId = nil
@@ -315,7 +333,7 @@ class NotificationService: NSObject, ObservableObject {
 extension NotificationService: UNUserNotificationCenterDelegate {
     
     // Handle notification when app is in foreground
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
@@ -325,12 +343,14 @@ extension NotificationService: UNUserNotificationCenterDelegate {
     }
     
     // Handle notification tap
-    func userNotificationCenter(
+    nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        handleNotificationTap(userInfo: response.notification.request.content.userInfo)
+        Task { @MainActor in
+            handleNotificationTap(userInfo: response.notification.request.content.userInfo)
+        }
         completionHandler()
     }
 }
