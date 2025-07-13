@@ -157,7 +157,7 @@ struct TripConversationView: View {
                 .padding(.horizontal)
                 .padding(.top)
             }
-            .onChange(of: messages.count) {
+            .onChange(of: messages.count) { _ in
                 if let lastMessage = messages.last {
                     withAnimation(.easeOut(duration: 0.3)) {
                         proxy.scrollTo(lastMessage.id, anchor: .bottom)

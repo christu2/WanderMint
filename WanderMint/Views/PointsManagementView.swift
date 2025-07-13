@@ -148,7 +148,7 @@ struct PointsManagementView: View {
                 .background(Color.white)
                 .cornerRadius(AppTheme.CornerRadius.md)
                 .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
-                .onChange(of: selectedType) { _, newType in
+                .onChange(of: selectedType) { newType in
                     // Update available providers and reset selection
                     availableProviders = providersForType(newType)
                     selectedProvider = ""

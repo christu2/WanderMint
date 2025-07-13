@@ -137,7 +137,7 @@ struct SmartTextField: View {
                 .background(Color.white)
                 .cornerRadius(8)
                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                .onChange(of: isFocused) { _, focused in
+                .onChange(of: isFocused) { focused in
                     onEditingChanged?(focused)
                 }
                 .onSubmit {
@@ -207,7 +207,7 @@ struct SmartTextEditor: View {
                     .background(Color.white)
                     .cornerRadius(8)
                     .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-                    .onChange(of: isFocused) { _, focused in
+                    .onChange(of: isFocused) { focused in
                         onEditingChanged?(focused)
                     }
                     .keyboardToolbar(showDoneButton: showDoneButton) {

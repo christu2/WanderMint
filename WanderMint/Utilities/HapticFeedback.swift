@@ -248,7 +248,7 @@ extension View {
         of value: T,
         perform action: @escaping (T) -> HapticFeedbackType
     ) -> some View {
-        self.onChange(of: value) { _, newValue in
+        self.onChange(of: value) { newValue in
             let feedbackType = action(newValue)
             switch feedbackType {
             case .light:
@@ -301,7 +301,7 @@ struct HapticButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
-            .onChange(of: configuration.isPressed) { _, isPressed in
+            .onChange(of: configuration.isPressed) { isPressed in
                 if isPressed {
                     switch hapticType {
                     case .light:
