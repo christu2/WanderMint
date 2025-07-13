@@ -31,14 +31,17 @@ final class ValidationTestsOnly: XCTestCase {
     
     func testPasswordStrengthValidation() {
         // Valid passwords
-        XCTAssertTrue(FormValidation.isValidPassword("password123"))
-        XCTAssertTrue(FormValidation.isValidPassword("strongPassword!"))
-        XCTAssertTrue(FormValidation.isValidPassword("mySecureP@ss1"))
-        
-        // Invalid passwords (too short)
+        XCTAssertTrue(FormValidation.isValidPassword("Password123!"))
+        XCTAssertTrue(FormValidation.isValidPassword("StrongPass1@"))
+        XCTAssertTrue(FormValidation.isValidPassword("MySecure1#"))
+        XCTAssertTrue(FormValidation.isValidPassword("mySecureP@ss1"))  // No uppercase
+
+        // Invalid passwords (too short or missing complexity)
         XCTAssertFalse(FormValidation.isValidPassword(""))
         XCTAssertFalse(FormValidation.isValidPassword("12345"))
         XCTAssertFalse(FormValidation.isValidPassword("short"))
+        XCTAssertFalse(FormValidation.isValidPassword("password123"))  // No uppercase or special char
+        XCTAssertFalse(FormValidation.isValidPassword("strongPassword!"))  // No digit
     }
     
     func testNameValidation() {

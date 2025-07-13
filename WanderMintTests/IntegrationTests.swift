@@ -174,7 +174,7 @@ final class IntegrationTests: XCTestCase {
             // Test validation methods
             XCTAssertTrue(authViewModel.isValidEmail("test@example.com"))
             XCTAssertFalse(authViewModel.isValidEmail("invalid-email"))
-            XCTAssertTrue(authViewModel.isValidPassword("validPassword123"))
+            XCTAssertTrue(authViewModel.isValidPassword("ValidPass123!"))
             XCTAssertFalse(authViewModel.isValidPassword("short"))
             
             expectation.fulfill()

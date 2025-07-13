@@ -42,11 +42,11 @@ class FormValidationTests: XCTestCase {
     
     func testValidPasswords() {
         let validPasswords = [
-            "password123",
-            "MySecurePassword!",
-            "12345678",
-            "TestPassword2023",
-            "A1B2C3D4E5F6G7H8"
+            "Password123!",
+            "MySecure1@",
+            "Strong9#Pass",
+            "Test2023$Word",
+            "Abc123#Def"
         ]
         
         for password in validPasswords {
@@ -59,7 +59,15 @@ class FormValidationTests: XCTestCase {
             "",
             "short",
             "1234567", // Only 7 characters
-            "abc123"   // Only 6 characters
+            "abc123",   // Only 6 characters
+            "password123", // No uppercase or special char
+            "PASSWORD123", // No lowercase or special char
+            "Password", // No digit or special char
+            "Password123", // No special char
+            "MySecurePassword", // No digit or special char
+            "12345678", // No letters or special char
+            "TestPassword2023", // No special char
+            "A1B2C3D4E5F6G7H8" // No special char
         ]
         
         for password in invalidPasswords {

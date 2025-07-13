@@ -52,15 +52,19 @@ final class AuthenticationViewModelTests: XCTestCase {
     // MARK: - Password Validation Tests
     
     func testValidPassword() {
-        XCTAssertTrue(viewModel.isValidPassword("123456"))
-        XCTAssertTrue(viewModel.isValidPassword("strongPassword123"))
-        XCTAssertTrue(viewModel.isValidPassword("minimumLength"))
+        XCTAssertTrue(viewModel.isValidPassword("Password123!"))
+        XCTAssertTrue(viewModel.isValidPassword("StrongPass1@"))
+        XCTAssertTrue(viewModel.isValidPassword("MySecure123#"))
     }
     
     func testInvalidPassword() {
         XCTAssertFalse(viewModel.isValidPassword(""))
         XCTAssertFalse(viewModel.isValidPassword("12345"))
         XCTAssertFalse(viewModel.isValidPassword("short"))
+        XCTAssertFalse(viewModel.isValidPassword("password123"))  // No uppercase or special char
+        XCTAssertFalse(viewModel.isValidPassword("PASSWORD123"))  // No lowercase or special char
+        XCTAssertFalse(viewModel.isValidPassword("Password"))     // No digit or special char
+        XCTAssertFalse(viewModel.isValidPassword("Password123"))  // No special char
     }
     
     // MARK: - State Management Tests
@@ -84,7 +88,7 @@ final class AuthenticationViewModelTests: XCTestCase {
         // Test loading state is set during sign in
         let expectation = expectation(description: "Loading state should be managed")
         
-        viewModel.signIn(email: "test@example.com", password: "password123")
+        viewModel.signIn(email: "test@example.com", password: "Password123!")
         
         // Initially loading should be true
         XCTAssertTrue(viewModel.isLoading)
