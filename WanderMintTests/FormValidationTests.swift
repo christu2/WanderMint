@@ -299,7 +299,6 @@ class FormValidationTests: XCTestCase {
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
         let dayAfterTomorrow = calendar.date(byAdding: .day, value: 2, to: today)!
         let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
-        let nextYear = calendar.date(byAdding: .year, value: 1, to: today)!
         let twoYearsFromNow = calendar.date(byAdding: .year, value: 2, to: today)!
         
         // Valid dates

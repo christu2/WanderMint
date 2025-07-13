@@ -118,14 +118,6 @@ struct PointsManagementView: View {
                     icon: "airplane",
                     color: AppTheme.Colors.accent
                 )
-                
-                PointsSummaryCard(
-                    title: "Total Value",
-                    points: totalPointsValue(),
-                    icon: "dollarsign.circle.fill",
-                    color: AppTheme.Colors.success,
-                    isValue: true
-                )
             }
         }
     }
@@ -293,13 +285,6 @@ struct PointsManagementView: View {
         points.values.reduce(0, +)
     }
     
-    private func totalPointsValue() -> Int {
-        // Use configured point values
-        let creditValue = Int(Double(totalPoints(for: viewModel.creditCardPoints)) * AppConfig.PointsValues.defaultCreditCardValue)
-        let hotelValue = Int(Double(totalPoints(for: viewModel.hotelPoints)) * AppConfig.PointsValues.defaultHotelValue)
-        let airlineValue = Int(Double(totalPoints(for: viewModel.airlinePoints)) * AppConfig.PointsValues.defaultAirlineValue)
-        return (creditValue + hotelValue + airlineValue) / 100 // Convert to dollars
-    }
     
     private func providersForType(_ type: PointsType) -> [String] {
         switch type {

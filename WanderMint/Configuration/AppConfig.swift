@@ -49,10 +49,10 @@ struct AppConfig {
     
     // MARK: - Support Information
     struct Support {
-        static let email = "support@travelconsulting.app"
-        static let websiteURL = "https://travelconsulting.app"
-        static let privacyPolicyURL = "https://travelconsulting.app/privacy"
-        static let termsOfServiceURL = "https://travelconsulting.app/terms"
+        static let email = "support@wandermint.io"
+        static let websiteURL = "https://wandermint.io"
+        static let privacyPolicyURL = "https://wandermint.io/privacy"
+        static let termsOfServiceURL = "https://wandermint.io/terms"
     }
 }
 

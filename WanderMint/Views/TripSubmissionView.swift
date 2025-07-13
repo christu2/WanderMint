@@ -586,7 +586,7 @@ struct TripSubmissionView: View {
     
     private func contactSupport() {
         // Open email or support URL
-        if let url = URL(string: "mailto:support@travelconsulting.app?subject=Trip Submission Issue") {
+        if let url = URL(string: "mailto:\(AppConfig.Support.email)?subject=Trip Submission Issue") {
             UIApplication.shared.open(url)
         }
     }

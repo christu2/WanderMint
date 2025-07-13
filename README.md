@@ -131,21 +131,43 @@ open WanderMint.xcworkspace
 ```
 WanderMint/
 ├── WanderMintApp.swift              # App entry point
+├── Configuration/
+│   ├── AppConfig.swift             # App configuration and settings
+│   └── Theme.swift                 # UI theming and styling
+├── Models/
+│   ├── DataModels.swift            # Core data structures
+│   ├── FeedbackModels.swift        # User feedback data models
+│   └── AdminCompatibleModels.swift # Admin interface models
+├── ViewModels/
+│   └── AuthenticationViewModel.swift # Authentication state management
 ├── Views/
 │   ├── MainTabView.swift           # Tab navigation
 │   ├── TripSubmissionView.swift    # Trip creation form
 │   ├── TripsListView.swift         # Trip management
-│   └── TripDetailView.swift        # Trip details and itinerary
+│   ├── TripDetailView.swift        # Trip details and itinerary
+│   ├── AuthenticationView.swift    # Login/signup interface
+│   ├── SplashView.swift            # App launch screen
+│   └── PointsManagementView.swift  # Loyalty points management
 ├── Services/
 │   ├── TripService.swift           # Trip data management
 │   ├── UserService.swift           # User profile management
-│   └── PointsService.swift         # Loyalty points tracking
-├── Models/
-│   └── DataModels.swift            # Core data structures
-└── Utilities/
-    ├── ContentFilter.swift         # Security and validation
-    ├── FormValidation.swift        # Input validation
-    └── FirebaseCompat.swift        # Firebase compatibility layer
+│   ├── PointsService.swift         # Loyalty points tracking
+│   ├── NotificationService.swift   # Push notifications
+│   ├── AnalyticsService.swift      # Analytics and tracking
+│   └── ConversationService.swift   # User-admin communication
+├── UIComponents/
+│   ├── UIComponents.swift          # Reusable UI components
+│   └── LoadingStates.swift         # Loading state components
+├── Utilities/
+│   ├── ContentFilter.swift         # Security and validation
+│   ├── FormValidation.swift        # Input validation
+│   ├── FirebaseCompat.swift        # Firebase compatibility layer
+│   ├── DateUtils.swift             # Date formatting utilities
+│   ├── Logger.swift                # Logging utilities
+│   └── NetworkMonitor.swift        # Network connectivity
+└── Resources/
+    ├── Assets.xcassets/            # App icons and images
+    └── PrivacyPolicy.md            # Privacy policy document
 ```
 
 ## 🖥️ Admin Dashboard

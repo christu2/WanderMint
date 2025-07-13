@@ -70,9 +70,34 @@ enum PointsType: String, CaseIterable {
 }
 
 struct PointsProvider {
-    static let creditCardProviders = ["American Express", "Chase", "Capital One", "Citi", "Bank of America", "Wells Fargo"]
-    static let hotelProviders = ["Hyatt", "Marriott", "Hilton", "IHG", "Wyndham", "Choice Hotels"]
-    static let airlineProviders = ["United", "Delta", "American", "Southwest", "JetBlue", "Alaska"]
+    static let creditCardProviders = ["American Express", "Chase", "Capital One", "Citi", "Bank of America", "Wells Fargo", "Bilt", "Mesa"]
+    
+    static let hotelProviders = [
+        // Major US/Global Chains
+        "Hyatt", "Marriott", "Hilton", "IHG", "Wyndham", "Choice Hotels",
+        // Accor Group (European/Global)
+        "Accor ALL", "Fairmont", "Raffles", "Sofitel", "Pullman", "MGallery", "Novotel", "Mercure", "ibis"
+    ]
+    
+    static let airlineProviders = [
+        // US Airlines
+        "United", "Delta", "American", "Southwest", "JetBlue", "Alaska", "Hawaiian", "Frontier", "Spirit",
+        // International Airlines (Transfer Partners)
+        // European
+        "Air France", "KLM", "British Airways", "Virgin Atlantic", "Lufthansa", "Swiss", "Austrian", "Brussels Airlines",
+        // Asian
+        "ANA", "JAL", "Singapore Airlines", "Cathay Pacific", "Korean Air", "Asiana", "Thai Airways", "EVA Air",
+        // Middle Eastern
+        "Emirates", "Etihad", "Qatar Airways",
+        // South American
+        "Avianca", "LATAM", "Azul",
+        // Canadian
+        "Air Canada", "WestJet",
+        // Australian/Oceania
+        "Qantas", "Virgin Australia",
+        // African
+        "South African Airways", "Ethiopian Airlines"
+    ]
 }
 
 // Keep the old one for backward compatibility
