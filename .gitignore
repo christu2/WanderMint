@@ -22,3 +22,12 @@ Podfile.lock
 # Claude Code settings
 .claude/settings.local.json
 Pods/
+.DS_Store
+*.log
+*.tmp
+GoogleService-Info.plist
+GoogleService-Info-backup.plist
+# Firebase config files contain sensitive keys
+*.xcuserstate
+xcuserdata/
+DerivedData/

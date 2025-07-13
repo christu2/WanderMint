@@ -30,9 +30,16 @@ struct FormValidation {
         return domainComponents.count >= 2 && domainComponents.allSatisfy { !$0.isEmpty }
     }
     
-    /// Validate password strength (minimum 8 characters)
+    /// Validate password strength (minimum 8 characters with complexity requirements)
     static func isValidPassword(_ password: String) -> Bool {
-        return password.count >= 8
+        guard password.count >= 8 else { return false }
+        
+        let hasUppercase = password.range(of: "[A-Z]", options: .regularExpression) != nil
+        let hasLowercase = password.range(of: "[a-z]", options: .regularExpression) != nil
+        let hasDigit = password.range(of: "[0-9]", options: .regularExpression) != nil
+        let hasSpecialChar = password.range(of: "[^A-Za-z0-9]", options: .regularExpression) != nil
+        
+        return hasUppercase && hasLowercase && hasDigit && hasSpecialChar
     }
     
     /// Validate name format

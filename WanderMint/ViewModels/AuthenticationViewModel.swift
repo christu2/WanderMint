@@ -154,6 +154,13 @@ class AuthenticationViewModel: ObservableObject {
     }
     
     func isValidPassword(_ password: String) -> Bool {
-        return password.count >= 6
+        guard password.count >= 8 else { return false }
+        
+        let hasUppercase = password.range(of: "[A-Z]", options: .regularExpression) != nil
+        let hasLowercase = password.range(of: "[a-z]", options: .regularExpression) != nil
+        let hasDigit = password.range(of: "[0-9]", options: .regularExpression) != nil
+        let hasSpecialChar = password.range(of: "[^A-Za-z0-9]", options: .regularExpression) != nil
+        
+        return hasUppercase && hasLowercase && hasDigit && hasSpecialChar
     }
 }
