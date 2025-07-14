@@ -375,7 +375,7 @@ struct ProfileSetupView: View {
                 
             } catch {
                 // Handle error - for now just continue
-                print("Error during onboarding: \(error)")
+                // Handle onboarding error silently
             }
             
             await MainActor.run {

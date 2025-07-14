@@ -37,13 +37,13 @@ class AuthenticationViewModel: ObservableObject {
     }
     
     private func setupAuthStateListener() {
-        authStateListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+        authStateListenerHandle = Auth.auth().addStateDidChangeListener { [weak self] auth, user in
             DispatchQueue.main.async {
                 self?.currentUser = user
                 self?.isAuthenticated = user != nil
                 
                 // Load user profile when authenticated
-                if user != nil {
+                if let user = user {
                     Task {
                         await self?.loadUserProfile()
                         try await self?.userService.updateLastLogin()
@@ -63,8 +63,24 @@ class AuthenticationViewModel: ObservableObject {
         Task {
             do {
                 _ = try await Auth.auth().signIn(withEmail: email, password: password)
-            } catch {
-                self.errorMessage = error.localizedDescription
+            } catch let error as NSError {
+                // Provide user-friendly error messages
+                if error.domain == "FIRAuthErrorDomain" {
+                    switch error.code {
+                    case 17008: // FIRAuthErrorCodeInvalidEmail
+                        self.errorMessage = "Please enter a valid email address"
+                    case 17009: // FIRAuthErrorCodeWrongPassword
+                        self.errorMessage = "Incorrect password. Please try again"
+                    case 17011: // FIRAuthErrorCodeUserNotFound
+                        self.errorMessage = "No account found with this email address"
+                    case 17020: // FIRAuthErrorCodeNetworkError
+                        self.errorMessage = "Network error. Please check your connection and try again"
+                    default:
+                        self.errorMessage = error.localizedDescription
+                    }
+                } else {
+                    self.errorMessage = "Connection error. Please check your internet connection and try again"
+                }
             }
             self.isLoading = false
         }

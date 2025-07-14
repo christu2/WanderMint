@@ -34,7 +34,7 @@ final class ValidationTestsOnly: XCTestCase {
         XCTAssertTrue(FormValidation.isValidPassword("Password123!"))
         XCTAssertTrue(FormValidation.isValidPassword("StrongPass1@"))
         XCTAssertTrue(FormValidation.isValidPassword("MySecure1#"))
-        XCTAssertTrue(FormValidation.isValidPassword("mySecureP@ss1"))  // No uppercase
+        XCTAssertTrue(FormValidation.isValidPassword("mySecureP@ss1"))
 
         // Invalid passwords (too short or missing complexity)
         XCTAssertFalse(FormValidation.isValidPassword(""))

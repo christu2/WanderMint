@@ -135,7 +135,6 @@
 	<!-- Background Modes for Notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>background-processing</string>
 		<string>remote-notification</string>
 	</array>
 	

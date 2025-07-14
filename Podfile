@@ -12,6 +12,7 @@ target 'WanderMint' do
   pod 'Firebase/Functions'
   pod 'Firebase/Analytics'
   pod 'Firebase/Crashlytics'
+  pod 'Firebase/Performance'
 
   target 'WanderMintTests' do
     inherit! :search_paths

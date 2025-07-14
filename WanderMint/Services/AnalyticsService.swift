@@ -5,6 +5,9 @@ import FirebaseAnalytics
 #if canImport(FirebaseCrashlytics)
 import FirebaseCrashlytics
 #endif
+#if canImport(FirebasePerformance)
+import FirebasePerformance
+#endif
 
 /// Service for tracking user events and crashes in production
 class AnalyticsService {
@@ -108,7 +111,7 @@ class AnalyticsService {
         Crashlytics.crashlytics().record(error: error)
         
         #if DEBUG
-        print("📊 Error tracked: \(error.localizedDescription) in \(context)")
+        // Error tracked to Firebase Crashlytics
         #endif
     }
     
@@ -134,15 +137,15 @@ class AnalyticsService {
         Analytics.logEvent(eventName, parameters: parameters)
         
         #if DEBUG
-        print("📊 Custom event tracked: \(eventName) with parameters: \(parameters)")
+        // Custom event tracked to Firebase Analytics
         #endif
     }
     
     // MARK: - Performance Monitoring
     
     /// Start a performance trace
-    func startTrace(name: String) -> PerformanceTrace? {
-        #if !DEBUG
+    func startTrace(name: String) -> Any? {
+        #if !DEBUG && canImport(FirebasePerformance)
         return Performance.startTrace(name: name)
         #else
         return nil
