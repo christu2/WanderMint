@@ -7,13 +7,15 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            TripSubmissionView()
-                .tabItem {
-                    Image(systemName: "plus.circle.fill")
-                    Text("New Trip")
-                }
-                .tag(0)
-                .accessibilityHint("Create a new trip request")
+            NavigationStack {
+                TripSubmissionView(selectedTab: $selectedTab)
+            }
+            .tabItem {
+                Image(systemName: "plus.circle.fill")
+                Text("New Trip")
+            }
+            .tag(0)
+            .accessibilityHint("Create a new trip request")
             
             NavigationStack {
                 TripsListView(selectedTab: $selectedTab)

@@ -188,12 +188,7 @@ struct PointsManagementView: View {
                             .font(AppTheme.Typography.bodySmall)
                             .foregroundColor(AppTheme.Colors.textSecondary)
                         
-                        TextField("Points", text: $pointsAmount)
-                            .keyboardType(.numberPad)
-                            .padding(AppTheme.Spacing.md)
-                            .background(Color.white)
-                            .cornerRadius(AppTheme.CornerRadius.sm)
-                            .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 1, x: 0, y: 1))
+                        StablePointsTextField(text: $pointsAmount)
                     }
                 }
                 

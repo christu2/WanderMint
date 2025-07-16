@@ -60,6 +60,8 @@ struct AuthenticationView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                     
                     if isSignUpMode {
+                        PasswordRequirementsView(password: password)
+                        
                         SecureField("Confirm Password", text: $confirmPassword)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                     }
@@ -243,7 +245,81 @@ struct ResetPasswordView: View {
     }
 }
 
+// MARK: - Password Requirements View
+struct PasswordRequirementsView: View {
+    let password: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Password Requirements:")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(AppTheme.Colors.textSecondary)
+            
+            PasswordRequirementRow(
+                text: "At least 8 characters",
+                isMet: password.count >= 8
+            )
+            
+            PasswordRequirementRow(
+                text: "One uppercase letter",
+                isMet: password.range(of: "[A-Z]", options: .regularExpression) != nil
+            )
+            
+            PasswordRequirementRow(
+                text: "One lowercase letter", 
+                isMet: password.range(of: "[a-z]", options: .regularExpression) != nil
+            )
+            
+            PasswordRequirementRow(
+                text: "One number",
+                isMet: password.range(of: "[0-9]", options: .regularExpression) != nil
+            )
+            
+            PasswordRequirementRow(
+                text: "One special character",
+                isMet: password.range(of: "[^A-Za-z0-9]", options: .regularExpression) != nil
+            )
+        }
+        .padding(.horizontal, 4)
+        .animation(.easeInOut(duration: 0.2), value: password)
+    }
+}
+
+struct PasswordRequirementRow: View {
+    let text: String
+    let isMet: Bool
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: isMet ? "checkmark.circle.fill" : "circle")
+                .foregroundColor(isMet ? .green : .gray)
+                .font(.system(size: 14))
+            
+            Text(text)
+                .font(.caption)
+                .foregroundColor(isMet ? AppTheme.Colors.textPrimary : AppTheme.Colors.textSecondary)
+        }
+    }
+}
+
 #Preview {
-    AuthenticationView()
-        .environmentObject(AuthenticationViewModel())
+    VStack(spacing: 20) {
+        AuthenticationView()
+            .environmentObject(AuthenticationViewModel())
+        
+        Divider()
+        
+        // Preview password requirements with different states
+        VStack(spacing: 16) {
+            Text("Password Requirements Examples")
+                .font(.headline)
+            
+            PasswordRequirementsView(password: "")
+            PasswordRequirementsView(password: "password")
+            PasswordRequirementsView(password: "Password123")
+            PasswordRequirementsView(password: "Password123!")
+        }
+        .padding()
+    }
 }

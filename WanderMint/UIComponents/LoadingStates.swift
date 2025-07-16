@@ -92,8 +92,6 @@ struct TripSubmissionLoadingView: View {
     
     private let stages = [
         "Validating your request...",
-        "Finding the best options...",
-        "Creating your itinerary...",
         "Almost ready!"
     ]
     

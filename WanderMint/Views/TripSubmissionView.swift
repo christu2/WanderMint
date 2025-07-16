@@ -1,4 +1,5 @@
 import SwiftUI
+import MapKit
 
 // MARK: - Interest Button Component (defined first)
 struct InterestButton: View {
@@ -34,7 +35,11 @@ struct InterestButton: View {
 struct TripSubmissionView: View {
     @StateObject private var viewModel = TripSubmissionViewModel()
     @State private var destinations: [String] = [""]
+    @State private var selectedDestinations: [LocationResult?] = [nil]
     @State private var departureLocation = ""
+    @State private var selectedDepartureLocation: LocationResult?
+    @Binding var selectedTab: Int
+    @Environment(\.dismiss) private var dismiss
     @State private var startDate = Date()
     @State private var endDate = Date().addingTimeInterval(7 * 24 * 60 * 60) // 7 days from now
     @State private var flexibleDates = false
@@ -46,7 +51,7 @@ struct TripSubmissionView: View {
     
     // New preference fields
     @State private var budget = ""
-    @State private var travelStyle = "Comfortable"
+    @State private var travelStyle = "" // Explicitly empty - no default selection
     @State private var groupSize = 1
     @State private var specialRequests = ""
     @State private var selectedInterests: Set<String> = []
@@ -55,72 +60,90 @@ struct TripSubmissionView: View {
     let interests = ["Culture", "Food", "Nature", "History", "Nightlife", "Shopping", "Adventure Sports", "Art", "Music", "Architecture"]
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                // Background gradient
-                LinearGradient(
-                    colors: [AppTheme.Colors.backgroundPrimary, AppTheme.Colors.secondaryLight],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .ignoresSafeArea()
-                
-                ScrollView {
-                    VStack(spacing: 0) {
-                        // Hero Section
-                        heroSection
-                        
-                        // Form Content
-                        VStack(spacing: AppTheme.Spacing.lg) {
-                            destinationSection
-                            preferencesSection
-                            interestsSection
-                            specialRequestsSection
-                            submitSection
-                        }
-                        .padding(AppTheme.Spacing.lg)
-                    }
-                }
-            }
-            .navigationBarHidden(true)
-            .disabled(viewModel.isLoading)
-            .overlay(
-                Group {
-                    if viewModel.isLoading {
-                        TripSubmissionLoadingView()
-                    }
-                }
+        ZStack {
+            // Background gradient
+            LinearGradient(
+                colors: [AppTheme.Colors.backgroundPrimary, AppTheme.Colors.secondaryLight],
+                startPoint: .top,
+                endPoint: .bottom
             )
-            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-                Button("Try Again") {
-                    viewModel.clearError()
-                    if isFormValid {
-                        submitTrip()
+            .ignoresSafeArea()
+            
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Hero Section
+                    heroSection
+                    
+                    // Form Content
+                    VStack(spacing: AppTheme.Spacing.lg) {
+                        destinationSection
+                        preferencesSection
+                        interestsSection
+                        specialRequestsSection
+                        submitSection
                     }
+                    .padding(AppTheme.Spacing.lg)
                 }
-                Button("Cancel", role: .cancel) {
-                    viewModel.clearError()
-                }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
             }
-            .alert("Success", isPresented: .constant(viewModel.submissionSuccess)) {
-                Button("OK") {
-                    viewModel.clearSuccess()
-                    clearForm()
-                }
-            } message: {
-                Text("Your trip request has been submitted! I'll personally plan your perfect itinerary and you'll be notified when it's ready.")
-            }
-            .onAppear {
-                AnalyticsService.shared.trackScreenView(AnalyticsService.ScreenNames.tripSubmission)
-            }
-            .errorRecovery(
-                error: $viewModel.currentError,
-                context: .tripSubmission,
-                onAction: handleRecoveryAction
-            )
         }
+        .navigationBarHidden(true)
+        .keyboardSafeArea()
+        .dismissKeyboardOnTap()
+        .disabled(viewModel.isLoading)
+        .overlay(
+            Group {
+                if viewModel.isLoading {
+                    TripSubmissionLoadingView()
+                }
+            }
+        )
+        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("Try Again") {
+                viewModel.clearError()
+                if isFormValid {
+                    submitTrip()
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                viewModel.clearError()
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .alert("Trip Submitted!", isPresented: .constant(viewModel.submissionSuccess)) {
+            Button("View My Trips") {
+                viewModel.clearSuccess()
+                clearForm()
+                navigateToMyTrips()
+            }
+        } message: {
+            Text("Your trip request has been submitted! I'll personally review your preferences and create your perfect itinerary. You'll be notified when it's ready.")
+        }
+        .onAppear {
+            AnalyticsService.shared.trackScreenView(AnalyticsService.ScreenNames.tripSubmission)
+            
+            // Configure navigation bar appearance for gradient background
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+            appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+            
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        }
+        .onDisappear {
+            // Restore default navigation bar appearance
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithDefaultBackground()
+            
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        }
+        .errorRecovery(
+            error: $viewModel.currentError,
+            context: .tripSubmission,
+            onAction: handleRecoveryAction
+        )
     }
     
     private var heroSection: some View {
@@ -171,44 +194,28 @@ struct TripSubmissionView: View {
             
             VStack(spacing: AppTheme.Spacing.md) {
                 // Departure location field
-                VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                    Text("Departure Location")
-                        .font(AppTheme.Typography.bodySmall)
-                        .foregroundColor(AppTheme.Colors.textSecondary)
-                    
-                    TextField("Where are you departing from?", text: $departureLocation)
-                        .textInputAutocapitalization(.words)
-                        .padding(AppTheme.Spacing.md)
-                        .background(Color.white)
-                        .cornerRadius(AppTheme.CornerRadius.md)
-                        .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
-                        .accessibilityLabel("Departure location")
-                        .accessibilityHint("Enter your departure city or airport")
-                }
+                LocationAutocompleteField(
+                    title: "Departure Location",
+                    placeholder: "Where are you departing from?",
+                    text: $departureLocation,
+                    selectedLocation: $selectedDepartureLocation
+                )
                 
                 // Multiple destination fields
                 ForEach(Array(destinations.enumerated()), id: \.offset) { index, destination in
                     HStack(spacing: AppTheme.Spacing.sm) {
-                        VStack(alignment: .leading, spacing: AppTheme.Spacing.xs) {
-                            if destinations.count > 1 {
-                                Text("Destination \(index + 1)")
-                                    .font(AppTheme.Typography.bodySmall)
-                                    .foregroundColor(AppTheme.Colors.textSecondary)
-                            }
-                            
-                            TextField(index == 0 ? "Enter your dream destination" : "Add another destination", 
-                                    text: Binding(
-                                        get: { destinations[index] },
-                                        set: { destinations[index] = $0 }
-                                    ))
-                                .textInputAutocapitalization(.words)
-                                .padding(AppTheme.Spacing.md)
-                                .background(Color.white)
-                                .cornerRadius(AppTheme.CornerRadius.md)
-                                .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
-                                .accessibilityLabel("Destination \(index + 1)")
-                                .accessibilityHint("Enter travel destination")
-                        }
+                        LocationAutocompleteField(
+                            title: destinations.count > 1 ? "Destination \(index + 1)" : "",
+                            placeholder: index == 0 ? "Enter your dream destination" : "Add another destination",
+                            text: Binding(
+                                get: { destinations[index] },
+                                set: { destinations[index] = $0 }
+                            ),
+                            selectedLocation: Binding(
+                                get: { selectedDestinations[safe: index] ?? nil },
+                                set: { selectedDestinations[safe: index] = $0 }
+                            )
+                        )
                         
                         if destinations.count > 1 {
                             Button(action: {
@@ -253,12 +260,8 @@ struct TripSubmissionView: View {
                         Text("Budget")
                             .font(AppTheme.Typography.bodySmall)
                             .foregroundColor(AppTheme.Colors.textSecondary)
-                        TextField("Optional", text: $budget)
-                            .keyboardType(.numberPad)
-                            .padding(AppTheme.Spacing.md)
-                            .background(Color.white)
-                            .cornerRadius(AppTheme.CornerRadius.md)
-                            .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                        
+                        StableBudgetTextField(text: $budget)
                             .accessibilityLabel("Trip budget")
                             .accessibilityHint("Enter your estimated trip budget")
                     }
@@ -290,8 +293,8 @@ struct TripSubmissionView: View {
                         }
                     } label: {
                         HStack {
-                            Text(travelStyle)
-                                .foregroundColor(AppTheme.Colors.textPrimary)
+                            Text(travelStyle.isEmpty ? "Select Style" : travelStyle)
+                                .foregroundColor(travelStyle.isEmpty ? AppTheme.Colors.textTertiary : AppTheme.Colors.textPrimary)
                             Spacer()
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
@@ -325,6 +328,14 @@ struct TripSubmissionView: View {
                         } else {
                             selectedInterests.insert(interest)
                         }
+                        
+                        // Dismiss keyboard after selection
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder),
+                            to: nil,
+                            from: nil,
+                            for: nil
+                        )
                     }
                 }
             }
@@ -339,12 +350,16 @@ struct TripSubmissionView: View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
             sectionHeader("Special Requests", icon: "message.fill")
             
-            TextField("Any special requests or requirements?", text: $specialRequests, axis: .vertical)
-                .lineLimit(3...6)
-                .padding(AppTheme.Spacing.md)
-                .background(Color.white)
-                .cornerRadius(AppTheme.CornerRadius.md)
-                .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+            SmartTextEditor(
+                title: "",
+                placeholder: "Any special requests or requirements?",
+                text: $specialRequests,
+                minHeight: 80,
+                maxHeight: 150,
+                autocapitalization: .sentences,
+                autocorrection: true,
+                showDoneButton: true
+            )
         }
     }
     
@@ -448,6 +463,7 @@ struct TripSubmissionView: View {
     private func addDestination() {
         withAnimation(AppTheme.Animation.quick) {
             destinations.append("")
+            selectedDestinations.append(nil)
         }
     }
     
@@ -455,6 +471,9 @@ struct TripSubmissionView: View {
         withAnimation(AppTheme.Animation.quick) {
             if destinations.count > 1 {
                 destinations.remove(at: index)
+                if selectedDestinations.indices.contains(index) {
+                    selectedDestinations.remove(at: index)
+                }
             }
         }
     }
@@ -530,12 +549,14 @@ struct TripSubmissionView: View {
     
     private func clearForm() {
         destinations = [""]
+        selectedDestinations = [nil]
         departureLocation = ""
+        selectedDepartureLocation = nil
         startDate = Date()
         endDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
         flexibleDates = false
         budget = ""
-        travelStyle = "Comfortable"
+        travelStyle = ""
         groupSize = 1
         specialRequests = ""
         selectedInterests = []
@@ -590,6 +611,12 @@ struct TripSubmissionView: View {
             UIApplication.shared.open(url)
         }
     }
+    
+    private func navigateToMyTrips() {
+        // Navigate to My Trips tab (assuming it's tab index 1)
+        selectedTab = 1
+        dismiss()
+    }
 }
 
 // MARK: - ViewModel
@@ -600,7 +627,11 @@ class TripSubmissionViewModel: ObservableObject {
     @Published var submissionSuccess = false
     @Published var currentError: Error?
     
-    private let tripService = TripService()
+    private let tripService: TripServiceProtocol
+    
+    init(tripService: TripServiceProtocol? = nil) {
+        self.tripService = tripService ?? TripService()
+    }
     
     func submitTrip(_ submission: EnhancedTripSubmission) {
         isLoading = true
@@ -670,11 +701,13 @@ struct CustomDatePicker: View {
                 }
                 .padding(.vertical, AppTheme.Spacing.sm)
                 .padding(.horizontal, AppTheme.Spacing.md)
-                .background(AppTheme.Colors.backgroundSecondary)
+                .background(Color.white)
                 .cornerRadius(AppTheme.CornerRadius.sm)
                 .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
             }
             .buttonStyle(PlainButtonStyle())
+            .frame(minHeight: 44) // Ensure proper touch target
+            .disabled(false) // Ensure date picker is always enabled
         }
         .sheet(isPresented: $showingDatePicker) {
             NavigationView {
@@ -710,6 +743,26 @@ struct CustomDatePicker: View {
     }
 }
 
+// MARK: - Array Extension for Safe Access
+extension Array {
+    subscript(safe index: Int) -> Element? {
+        get {
+            return indices.contains(index) ? self[index] : nil
+        }
+        set {
+            if indices.contains(index), let newValue = newValue {
+                self[index] = newValue
+            } else if let newValue = newValue {
+                // Extend array if needed
+                while count <= index {
+                    self.append(newValue)
+                }
+                self[index] = newValue
+            }
+        }
+    }
+}
+
 #Preview {
-    TripSubmissionView()
+    TripSubmissionView(selectedTab: .constant(0))
 }

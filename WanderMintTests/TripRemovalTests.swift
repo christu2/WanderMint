@@ -8,8 +8,8 @@
 import XCTest
 @testable import WanderMint
 
-// Mock TripService for testing
-class MockTripService: TripServiceProtocol {
+// Mock TripService for trip removal testing
+class MockTripRemovalService: TripServiceProtocol {
     var shouldThrowError = false
     var errorToThrow: Error?
     
@@ -29,6 +29,13 @@ class MockTripService: TripServiceProtocol {
     func fetchUserTrips() async throws -> [TravelTrip] {
         return []
     }
+    
+    func submitEnhancedTrip(_ submission: EnhancedTripSubmission) async throws {
+        // Mock implementation - not used in trip removal tests
+        if shouldThrowError {
+            throw TravelAppError.networkError("Mock submission error")
+        }
+    }
 }
 
 class TripRemovalTests: XCTestCase {
@@ -41,8 +48,8 @@ class TripRemovalTests: XCTestCase {
     }
     
     @MainActor
-    private func createViewModel(mockService: MockTripService? = nil) async -> TripsListViewModel {
-        let service = mockService ?? MockTripService()
+    private func createViewModel(mockService: MockTripRemovalService? = nil) async -> TripsListViewModel {
+        let service = mockService ?? MockTripRemovalService()
         return TripsListViewModel(tripService: service)
     }
     
@@ -102,7 +109,7 @@ class TripRemovalTests: XCTestCase {
     
     func testDeleteTripRemovesFromLocalArray() async {
         // Create mock service that succeeds
-        let mockService = MockTripService()
+        let mockService = MockTripRemovalService()
         mockService.shouldThrowError = false
         
         let viewModel = await createViewModel(mockService: mockService)
@@ -136,7 +143,7 @@ class TripRemovalTests: XCTestCase {
     
     func testDeleteTripHandlesErrors() async {
         // Create mock service that throws errors
-        let mockService = MockTripService()
+        let mockService = MockTripRemovalService()
         mockService.shouldThrowError = true
         
         let viewModel = await createViewModel(mockService: mockService)

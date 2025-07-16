@@ -95,6 +95,7 @@ struct TripsListScrollView: View {
                 TripsListHeader(tripCount: trips.count)
                 TripsListGrid(trips: trips, pendingTripId: pendingTripId, viewModel: viewModel)
             }
+            .padding(.top, AppTheme.Spacing.lg)
         }
         .refreshable {
             await refreshAction()
@@ -112,17 +113,18 @@ struct TripsListHeader: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
-            Text("My Adventures")
+            Text("My Trips")
                 .font(AppTheme.Typography.h1)
                 .foregroundColor(AppTheme.Colors.textPrimary)
             
-            Text("\(tripCount) trip\(tripCount == 1 ? "" : "s") planned")
-                .font(AppTheme.Typography.body)
-                .foregroundColor(AppTheme.Colors.textSecondary)
+            if tripCount > 0 {
+                Text("\(tripCount) trip\(tripCount == 1 ? "" : "s") planned")
+                    .font(AppTheme.Typography.body)
+                    .foregroundColor(AppTheme.Colors.textSecondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, AppTheme.Spacing.lg)
-        .padding(.top, AppTheme.Spacing.lg)
     }
 }
 
@@ -175,6 +177,8 @@ struct TripsListEmptyStateView: View {
     
     var body: some View {
         VStack(spacing: AppTheme.Spacing.xl) {
+            TripsListHeader(tripCount: 0)
+            
             Spacer()
             
             TripsListEmptyStateIcon()
@@ -447,9 +451,8 @@ struct TripRowView: View {
 protocol TripServiceProtocol {
     func deleteTrip(tripId: String) async throws
     func fetchUserTrips() async throws -> [TravelTrip]
+    func submitEnhancedTrip(_ submission: EnhancedTripSubmission) async throws
 }
-
-extension TripService: TripServiceProtocol {}
 
 @MainActor
 class TripsListViewModel: ObservableObject {

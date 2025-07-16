@@ -11,7 +11,7 @@ import FirebaseFirestore
 import os.log
 
 @MainActor
-class TripService: ObservableObject {
+class TripService: ObservableObject, TripServiceProtocol {
     #if canImport(FirebaseFirestore)
     private let db = Firestore.firestore()
     #endif
