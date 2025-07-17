@@ -21,7 +21,8 @@ class TripSubmissionViewTests: XCTestCase {
     
     @MainActor
     func testViewModelInitialState() {
-        let viewModel = TripSubmissionViewModel()
+        let mockService = MockTripService()
+        let viewModel = TripSubmissionViewModel(tripService: mockService)
         
         XCTAssertFalse(viewModel.isLoading)
         XCTAssertNil(viewModel.errorMessage)
@@ -31,7 +32,8 @@ class TripSubmissionViewTests: XCTestCase {
     
     @MainActor
     func testViewModelLoadingState() {
-        let viewModel = TripSubmissionViewModel()
+        let mockService = MockTripService()
+        let viewModel = TripSubmissionViewModel(tripService: mockService)
         
         // Mock a successful submission
         let mockSubmission = EnhancedTripSubmission(
@@ -104,7 +106,8 @@ class TripSubmissionViewTests: XCTestCase {
     
     @MainActor
     func testViewModelClearError() {
-        let viewModel = TripSubmissionViewModel()
+        let mockService = MockTripService()
+        let viewModel = TripSubmissionViewModel(tripService: mockService)
         
         // Set an error
         viewModel.submitTrip(EnhancedTripSubmission(
@@ -131,7 +134,8 @@ class TripSubmissionViewTests: XCTestCase {
     
     @MainActor
     func testViewModelClearSuccess() {
-        let viewModel = TripSubmissionViewModel()
+        let mockService = MockTripService()
+        let viewModel = TripSubmissionViewModel(tripService: mockService)
         
         // Simulate success state
         viewModel.clearSuccess()

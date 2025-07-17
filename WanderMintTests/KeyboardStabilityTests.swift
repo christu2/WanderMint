@@ -156,7 +156,8 @@ class KeyboardStabilityTests: XCTestCase {
     
     @MainActor 
     func testTravelStyleDefaultValue() {
-        let viewModel = TripSubmissionViewModel()
+        let mockService = MockTripService()
+        let viewModel = TripSubmissionViewModel(tripService: mockService)
         XCTAssertNotNil(viewModel)
         
         // Test that travel style starts empty
@@ -309,3 +310,4 @@ class KeyboardStabilityTests: XCTestCase {
         XCTAssertEqual(filteredText, "1000")
     }
 }
+

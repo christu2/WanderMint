@@ -34,19 +34,31 @@ struct LocationAutocompleteField: View {
                             }
                             
                             if !newValue.isEmpty && newValue.count >= 2 {
-                                // Show immediate fallback suggestions
-                                let immediateFallback = self.getFallbackSuggestions(for: newValue)
-                                self.searchResults = immediateFallback
-                                showingResults = true
+                                // PRIMARY: Use curated city database first
+                                let curatedResults = self.getCuratedCitySuggestions(for: newValue)
                                 
-                                // Also try MapKit in parallel
-                                searchCompleter.queryFragment = newValue
-                                isSearching = true
-                                
-                                // Stop searching after 1 second if MapKit doesn't respond
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                    if self.isSearching {
-                                        self.isSearching = false
+                                if curatedResults.count >= 1 {
+                                    // If we have ANY curated results, use them as primary
+                                    self.searchResults = curatedResults
+                                    showingResults = true
+                                    
+                                    // Don't use MapKit at all - curated results are better
+                                    isSearching = false
+                                } else {
+                                    // Only use MapKit if no curated results found
+                                    let immediateFallback = self.getFallbackSuggestions(for: newValue)
+                                    self.searchResults = immediateFallback
+                                    showingResults = true
+                                    
+                                    // Try MapKit as fallback
+                                    searchCompleter.queryFragment = newValue
+                                    isSearching = true
+                                    
+                                    // Stop searching after 1 second if MapKit doesn't respond
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                        if self.isSearching {
+                                            self.isSearching = false
+                                        }
                                     }
                                 }
                             } else {
@@ -75,7 +87,7 @@ struct LocationAutocompleteField: View {
                 .cornerRadius(AppTheme.CornerRadius.md)
                 .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
                 
-                if showingResults && (!searchResults.isEmpty || !text.isEmpty) {
+                if showingResults && !searchResults.isEmpty {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 0) {
                             // Show search results first
@@ -88,7 +100,7 @@ struct LocationAutocompleteField: View {
                                     .padding(.horizontal, AppTheme.Spacing.md)
                             }
                             
-                            // Always show "Use what you typed" option
+                            // Show "Use what you typed" option only when we have results
                             if !text.isEmpty {
                                 UseTypedTextRow(text: text, action: acceptTypedText)
                             }
@@ -180,121 +192,103 @@ struct LocationAutocompleteField: View {
         
         // Configure for travel destinations only
         searchCompleter.filterType = .locationsOnly
-        searchCompleter.resultTypes = [.address] // Focus on places, not businesses
+        searchCompleter.resultTypes = [.address] // Back to address for better city results
+        searchCompleter.region = MKCoordinateRegion(.world) // Global search
+        
+        // Exclude all POIs to focus on places/cities
+        if #available(iOS 13.0, *) {
+            searchCompleter.pointOfInterestFilter = MKPointOfInterestFilter.excludingAll
+        }
     }
     
     private func filterAndRankTravelResults(_ results: [LocationResult]) -> [LocationResult] {
-        // Filter to only high-level destinations
+        // Aggressive filtering to remove streets, avenues, and unwanted results
         let destinationResults = results.filter { result in
             let title = result.title.lowercased()
             let subtitle = result.subtitle.lowercased()
-            let fullText = "\(title) \(subtitle)"
             
-            // EXCLUDE: Streets, neighborhoods, specific locations within cities
-            let excludeKeywords = [
-                "street", "st", "avenue", "ave", "road", "rd", "boulevard", "blvd", "drive", "dr",
-                "lane", "ln", "way", "place", "pl", "court", "ct", "circle", "cir",
-                "loop", "river", "creek", "bridge", "highway", "freeway", "expressway",
-                "neighborhood", "district", "quarter", "area", "center", "centre",
-                "mall", "plaza", "square", "park", "airport", "station", "terminal",
-                "north", "south", "east", "west", "upper", "lower", "downtown", "midtown",
-                "little", "old", "new", "greater", "metro", "village", "heights", "hills",
-                "chinatown", "koreatown", "japantown", "germantown", "french quarter",
-                "lake", "mountain", "capitol", "building", "museum", "university", "college"
-            ]
+            // Exclude results with numbers (addresses)
+            if title.contains(where: { $0.isNumber }) || subtitle.contains(where: { $0.isNumber }) {
+                return false
+            }
             
-            // Exclude if title contains street/location indicators
-            for keyword in excludeKeywords {
+            // Exclude street endings
+            let streetEndings = ["st", "ave", "rd", "dr", "ln", "blvd", "street", "avenue", "road", "drive", "lane", "boulevard", "way", "place", "court", "circle"]
+            for ending in streetEndings {
+                if title.hasSuffix(" \(ending)") || title == ending {
+                    return false
+                }
+            }
+            
+            // Exclude street keywords anywhere in title
+            let streetKeywords = [" st ", " ave ", " street ", " avenue ", " road ", " rd ", " drive ", " dr ", " lane ", " ln ", " boulevard ", " blvd ", " way ", " place ", " court ", " circle "]
+            for keyword in streetKeywords {
                 if title.contains(keyword) {
                     return false
                 }
             }
             
-            // Exclude if title contains numbers (likely addresses or specific locations)
-            if title.contains(where: { $0.isNumber }) {
+            // Exclude transit and infrastructure
+            let transitKeywords = ["airport", "station", "terminal", "depot", "stop", "platform", "rail", "train", "metro", "subway", "bus", "mall", "plaza", "shopping", "center", "centre"]
+            for keyword in transitKeywords {
+                if title.contains(keyword) || subtitle.contains(keyword) {
+                    return false
+                }
+            }
+            
+            // Exclude "Nearby" results (POIs)
+            if subtitle.contains("nearby") || subtitle.contains("search nearby") {
                 return false
             }
             
-            // Exclude neighborhood patterns - if subtitle contains multiple cities/locations
-            // (like "Little Italy, Chicago, IL" - the subtitle has a city name)
-            let subtitleParts = subtitle.components(separatedBy: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-            if subtitleParts.count >= 2 {
-                // If the first part of subtitle is a city name, this is likely a neighborhood
-                let potentialCityName = subtitleParts[0].lowercased()
-                if potentialCityName.count > 3 && !potentialCityName.contains("county") && !potentialCityName.contains("province") {
-                    // Check if this looks like a major city (has multiple words or is well-known)
-                    let cityWords = potentialCityName.components(separatedBy: " ")
-                    if cityWords.count <= 3 && potentialCityName.count <= 20 {
-                        return false
-                    }
+            // Exclude business/building indicators
+            let businessKeywords = ["&", "/", "#", "llc", "inc", "corp", "ltd", "co.", "building", "tower", "complex"]
+            for keyword in businessKeywords {
+                if title.contains(keyword) || subtitle.contains(keyword) {
+                    return false
                 }
             }
             
-            // INCLUDE: Only results that are clearly destinations
+            // Must have proper geographic format (comma or non-empty subtitle)
+            let hasProperFormat = result.title.contains(",") || !result.subtitle.isEmpty
             
-            // Priority 1: Well-known destinations (countries, major cities)
-            let isWellKnownPlace = result.isWellKnownDestination(result.title)
+            // Basic validation
+            let validLength = title.count >= 2 && title.count <= 50
             
-            // Priority 2: Simple state/country names (like "Kentucky" or "California")
-            let isSimpleStateName = subtitle.isEmpty || 
-                                   (subtitle.contains("united states") && !subtitle.contains(",")) ||
-                                   (subtitle.contains("usa") && !subtitle.contains(","))
-            
-            // Priority 3: Clean city, state format (like "Louisville, Kentucky" not "Kentucky St, Louisville")
-            let hasCleanCityStateFormat = subtitle.contains(",") && 
-                                         !title.contains(" ") && // Single word cities only for now
-                                         title.count <= 20 &&
-                                         subtitle.count < 50
-            
-            // Must be a clean place name (no special characters, reasonable length)
-            let isCleanPlaceName = title.count <= 30 && 
-                                  !title.contains("&") && 
-                                  !title.contains("/") &&
-                                  !title.contains("#") &&
-                                  title.components(separatedBy: " ").count <= 2 // Max 2 words
-            
-            return (isWellKnownPlace || isSimpleStateName || hasCleanCityStateFormat) && isCleanPlaceName
+            return hasProperFormat && validLength
         }
-        
-        // Keywords that boost city/region ranking
-        let destinationKeywords = [
-            "city", "capital", "state", "province", "country", "region", "territory", "county"
-        ]
         
         let rankedResults = destinationResults.map { result -> (LocationResult, Int) in
             var score = 0
-            let fullText = "\(result.title) \(result.subtitle)".lowercased()
+            let title = result.title.lowercased()
+            let subtitle = result.subtitle.lowercased()
             
-            // Boost well-known destinations highest
+            // MASSIVE BOOST: Exact major city names
+            let majorCities = ["chicago", "new york", "los angeles", "san francisco", "boston", "miami", "seattle", 
+                             "paris", "london", "tokyo", "rome", "madrid", "berlin", "sydney", "toronto", 
+                             "shanghai", "hong kong", "barcelona", "amsterdam", "vienna", "prague"]
+            if majorCities.contains(title) {
+                score += 100
+            }
+            
+            // BOOST: Well-known destinations
             if result.isWellKnownDestination(result.title) {
-                score += 20
+                score += 50
             }
             
-            // Boost results with proper geographic structure
-            let commaCount = result.subtitle.filter { $0 == "," }.count
-            if commaCount >= 1 {
-                score += 15 // City, State or City, Country format
-            }
-            if commaCount >= 2 {
-                score += 5  // City, State, Country format
+            // BOOST: International destinations
+            let isInternational = !subtitle.contains("united states") && !subtitle.contains("usa")
+            if isInternational {
+                score += 30
             }
             
-            // Boost results containing destination keywords
-            for keyword in destinationKeywords {
-                if fullText.contains(keyword) {
-                    score += 10
-                    break
-                }
-            }
+            // BOOST: Proper geographic structure (has commas)
+            let commaCount = result.title.filter { $0 == "," }.count + result.subtitle.filter { $0 == "," }.count
+            score += commaCount * 10
             
-            // Boost shorter, cleaner names (likely cities vs. neighborhoods)
-            if result.title.count <= 15 {
-                score += 5
-            }
-            
-            // Slightly boost results with "state" or "province" in subtitle
-            if result.subtitle.contains("state") || result.subtitle.contains("province") {
-                score += 3
+            // PENALTY: Long names (likely not major cities)
+            if result.title.count > 20 {
+                score -= 10
             }
             
             return (result, score)
@@ -352,23 +346,272 @@ struct LocationAutocompleteField: View {
         )
     }
     
+    private func getCuratedCitySuggestions(for query: String) -> [LocationResult] {
+        let queryLower = query.lowercased()
+        
+        // Comprehensive database of countries, major cities, and regions worldwide
+        let destinationsDatabase = [
+            // Countries (highest priority)
+            ("United States", "North America"),
+            ("Canada", "North America"),
+            ("Mexico", "North America"),
+            ("United Kingdom", "Europe"),
+            ("France", "Europe"),
+            ("Italy", "Europe"),
+            ("Spain", "Europe"),
+            ("Germany", "Europe"),
+            ("Greece", "Europe"),
+            ("Netherlands", "Europe"),
+            ("Switzerland", "Europe"),
+            ("Austria", "Europe"),
+            ("Portugal", "Europe"),
+            ("Ireland", "Europe"),
+            ("Sweden", "Europe"),
+            ("Norway", "Europe"),
+            ("Denmark", "Europe"),
+            ("Finland", "Europe"),
+            ("Belgium", "Europe"),
+            ("Czech Republic", "Europe"),
+            ("Hungary", "Europe"),
+            ("Poland", "Europe"),
+            ("Russia", "Europe/Asia"),
+            ("Turkey", "Europe/Asia"),
+            ("China", "Asia"),
+            ("Japan", "Asia"),
+            ("South Korea", "Asia"),
+            ("Thailand", "Thailand"),
+            ("Singapore", "Asia"),
+            ("India", "Asia"),
+            ("Indonesia", "Asia"),
+            ("Malaysia", "Asia"),
+            ("Philippines", "Asia"),
+            ("Vietnam", "Asia"),
+            ("Australia", "Oceania"),
+            ("New Zealand", "Oceania"),
+            ("Brazil", "South America"),
+            ("Argentina", "South America"),
+            ("Chile", "South America"),
+            ("Peru", "South America"),
+            ("Colombia", "South America"),
+            ("Ecuador", "South America"),
+            ("Egypt", "Africa"),
+            ("South Africa", "Africa"),
+            ("Morocco", "Africa"),
+            ("Kenya", "Africa"),
+            ("Tanzania", "Africa"),
+            
+            // US States
+            ("Alabama", "United States"),
+            ("Alaska", "United States"),
+            ("Arizona", "United States"),
+            ("Arkansas", "United States"),
+            ("California", "United States"),
+            ("Colorado", "United States"),
+            ("Connecticut", "United States"),
+            ("Delaware", "United States"),
+            ("Florida", "United States"),
+            ("Georgia", "United States"),
+            ("Hawaii", "United States"),
+            ("Idaho", "United States"),
+            ("Illinois", "United States"),
+            ("Indiana", "United States"),
+            ("Iowa", "United States"),
+            ("Kansas", "United States"),
+            ("Kentucky", "United States"),
+            ("Louisiana", "United States"),
+            ("Maine", "United States"),
+            ("Maryland", "United States"),
+            ("Massachusetts", "United States"),
+            ("Michigan", "United States"),
+            ("Minnesota", "United States"),
+            ("Mississippi", "United States"),
+            ("Missouri", "United States"),
+            ("Montana", "United States"),
+            ("Nebraska", "United States"),
+            ("Nevada", "United States"),
+            ("New Hampshire", "United States"),
+            ("New Jersey", "United States"),
+            ("New Mexico", "United States"),
+            ("New York", "United States"),
+            ("North Carolina", "United States"),
+            ("North Dakota", "United States"),
+            ("Ohio", "United States"),
+            ("Oklahoma", "United States"),
+            ("Oregon", "United States"),
+            ("Pennsylvania", "United States"),
+            ("Rhode Island", "United States"),
+            ("South Carolina", "United States"),
+            ("South Dakota", "United States"),
+            ("Tennessee", "United States"),
+            ("Texas", "United States"),
+            ("Utah", "United States"),
+            ("Vermont", "United States"),
+            ("Virginia", "United States"),
+            ("Washington", "United States"),
+            ("West Virginia", "United States"),
+            ("Wisconsin", "United States"),
+            ("Wyoming", "United States"),
+            
+            // Canadian Provinces and Territories
+            ("Alberta", "Canada"),
+            ("British Columbia", "Canada"),
+            ("Manitoba", "Canada"),
+            ("New Brunswick", "Canada"),
+            ("Newfoundland and Labrador", "Canada"),
+            ("Northwest Territories", "Canada"),
+            ("Nova Scotia", "Canada"),
+            ("Nunavut", "Canada"),
+            ("Ontario", "Canada"),
+            ("Prince Edward Island", "Canada"),
+            ("Quebec", "Canada"),
+            ("Saskatchewan", "Canada"),
+            ("Yukon", "Canada"),
+            
+            // Major Cities - North America
+            ("Chicago", "Illinois, United States"),
+            ("New York", "New York, United States"),
+            ("Los Angeles", "California, United States"),
+            ("San Francisco", "California, United States"),
+            ("Boston", "Massachusetts, United States"),
+            ("Miami", "Florida, United States"),
+            ("Seattle", "Washington, United States"),
+            ("Las Vegas", "Nevada, United States"),
+            ("Washington", "District of Columbia, United States"),
+            ("Toronto", "Ontario, Canada"),
+            ("Vancouver", "British Columbia, Canada"),
+            ("Montreal", "Quebec, Canada"),
+            ("Mexico City", "Mexico"),
+            
+            // Major Cities - Europe
+            ("London", "United Kingdom"),
+            ("Paris", "France"),
+            ("Rome", "Italy"),
+            ("Barcelona", "Spain"),
+            ("Madrid", "Spain"),
+            ("Amsterdam", "Netherlands"),
+            ("Berlin", "Germany"),
+            ("Vienna", "Austria"),
+            ("Prague", "Czech Republic"),
+            ("Budapest", "Hungary"),
+            ("Athens", "Greece"),
+            ("Florence", "Italy"),
+            ("Venice", "Italy"),
+            ("Milan", "Italy"),
+            ("Naples", "Italy"),
+            ("Lisbon", "Portugal"),
+            ("Dublin", "Ireland"),
+            ("Edinburgh", "Scotland, United Kingdom"),
+            ("Stockholm", "Sweden"),
+            ("Copenhagen", "Denmark"),
+            ("Oslo", "Norway"),
+            ("Helsinki", "Finland"),
+            ("Zurich", "Switzerland"),
+            ("Geneva", "Switzerland"),
+            ("Brussels", "Belgium"),
+            ("Moscow", "Russia"),
+            ("St Petersburg", "Russia"),
+            
+            // Major Cities - Asia
+            ("Tokyo", "Japan"),
+            ("Kyoto", "Japan"),
+            ("Osaka", "Japan"),
+            ("Hong Kong", "Hong Kong"),
+            ("Shanghai", "China"),
+            ("Beijing", "China"),
+            ("Seoul", "South Korea"),
+            ("Bangkok", "Thailand"),
+            ("Singapore", "Singapore"),
+            ("Mumbai", "India"),
+            ("Delhi", "India"),
+            ("Istanbul", "Turkey"),
+            ("Dubai", "United Arab Emirates"),
+            ("Kuala Lumpur", "Malaysia"),
+            ("Manila", "Philippines"),
+            ("Ho Chi Minh City", "Vietnam"),
+            ("Hanoi", "Vietnam"),
+            
+            // Major Cities - Oceania
+            ("Sydney", "Australia"),
+            ("Melbourne", "Australia"),
+            ("Brisbane", "Australia"),
+            ("Perth", "Australia"),
+            ("Auckland", "New Zealand"),
+            ("Wellington", "New Zealand"),
+            
+            // Major Cities - South America
+            ("Buenos Aires", "Argentina"),
+            ("Rio de Janeiro", "Brazil"),
+            ("São Paulo", "Brazil"),
+            ("Lima", "Peru"),
+            ("Santiago", "Chile"),
+            ("Bogotá", "Colombia"),
+            ("Quito", "Ecuador"),
+            
+            // Major Cities - Africa
+            ("Cairo", "Egypt"),
+            ("Cape Town", "South Africa"),
+            ("Johannesburg", "South Africa"),
+            ("Marrakech", "Morocco"),
+            ("Casablanca", "Morocco"),
+            ("Nairobi", "Kenya"),
+            ("Dar es Salaam", "Tanzania")
+        ]
+        
+        // Filter destinations that match the query
+        let matchingDestinations = destinationsDatabase.filter { destination in
+            destination.0.lowercased().hasPrefix(queryLower) ||
+            destination.0.lowercased().contains(queryLower)
+        }
+        
+        // Convert to LocationResult and sort by relevance
+        return matchingDestinations
+            .sorted { first, second in
+                let firstExactMatch = first.0.lowercased().hasPrefix(queryLower)
+                let secondExactMatch = second.0.lowercased().hasPrefix(queryLower)
+                
+                // Prioritize countries and states (they have region-style subtitles)
+                let countryRegions = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Europe/Asia"]
+                let stateCountries = ["United States", "Canada"]
+                
+                let firstIsCountryOrState = countryRegions.contains(first.1) || stateCountries.contains(first.1)
+                let secondIsCountryOrState = countryRegions.contains(second.1) || stateCountries.contains(second.1)
+                
+                if firstIsCountryOrState && !secondIsCountryOrState {
+                    return true
+                } else if !firstIsCountryOrState && secondIsCountryOrState {
+                    return false
+                } else if firstExactMatch && !secondExactMatch {
+                    return true
+                } else if !firstExactMatch && secondExactMatch {
+                    return false
+                } else {
+                    // Both are same type - sort by name length (shorter = more important)
+                    return first.0.count < second.0.count
+                }
+            }
+            .prefix(6)
+            .map { destination in
+                LocationResult(
+                    title: destination.0,
+                    subtitle: destination.1,
+                    coordinate: nil
+                )
+            }
+    }
+    
     private func getFallbackSuggestions(for query: String) -> [LocationResult] {
         let queryLower = query.lowercased()
         
         // Popular travel destinations that match the query
+        // Prioritized with international destinations first
         let popularDestinations = [
+            // Major European destinations (international priority)
             ("Paris", "France"),
             ("London", "United Kingdom"),
-            ("Tokyo", "Japan"),
-            ("New York", "New York, USA"),
             ("Rome", "Italy"),
+            ("Athens", "Greece"),
             ("Barcelona", "Spain"),
             ("Amsterdam", "Netherlands"),
-            ("Sydney", "Australia"),
-            ("Dubai", "United Arab Emirates"),
-            ("Singapore", "Singapore"),
-            ("Bangkok", "Thailand"),
-            ("Istanbul", "Turkey"),
             ("Berlin", "Germany"),
             ("Vienna", "Austria"),
             ("Prague", "Czech Republic"),
@@ -376,42 +619,105 @@ struct LocationAutocompleteField: View {
             ("Florence", "Italy"),
             ("Venice", "Italy"),
             ("Santorini", "Greece"),
+            ("Madrid", "Spain"),
+            ("Lisbon", "Portugal"),
+            ("Dublin", "Ireland"),
+            ("Edinburgh", "Scotland, United Kingdom"),
+            ("Stockholm", "Sweden"),
+            ("Copenhagen", "Denmark"),
+            ("Oslo", "Norway"),
+            ("Helsinki", "Finland"),
+            ("Reykjavik", "Iceland"),
+            ("Zurich", "Switzerland"),
+            ("Geneva", "Switzerland"),
+            ("Brussels", "Belgium"),
+            ("Warsaw", "Poland"),
+            ("Krakow", "Poland"),
+            ("Moscow", "Russia"),
+            ("St Petersburg", "Russia"),
+            
+            // Major Asian destinations (international priority)
+            ("Tokyo", "Japan"),
+            ("Kyoto", "Japan"),
+            ("Bangkok", "Thailand"),
+            ("Singapore", "Singapore"),
+            ("Hong Kong", "Hong Kong"),
+            ("Seoul", "South Korea"),
+            ("Beijing", "China"),
+            ("Shanghai", "China"),
+            ("Mumbai", "India"),
+            ("Delhi", "India"),
+            ("Istanbul", "Turkey"),
+            ("Dubai", "United Arab Emirates"),
             ("Bali", "Indonesia"),
-            ("Hawaii", "USA"),
+            ("Kuala Lumpur", "Malaysia"),
+            ("Manila", "Philippines"),
+            ("Ho Chi Minh City", "Vietnam"),
+            ("Hanoi", "Vietnam"),
+            
+            // Major destinations in Americas (international priority)
+            ("Mexico City", "Mexico"),
+            ("Cancun", "Mexico"),
+            ("Lima", "Peru"),
+            ("Cusco", "Peru"),
+            ("Buenos Aires", "Argentina"),
+            ("Rio de Janeiro", "Brazil"),
+            ("Santiago", "Chile"),
+            ("Bogota", "Colombia"),
+            ("Montreal", "Quebec, Canada"),
+            ("Toronto", "Ontario, Canada"),
+            ("Vancouver", "British Columbia, Canada"),
+            
+            // Major African destinations (international priority)
+            ("Cairo", "Egypt"),
+            ("Marrakech", "Morocco"),
+            ("Cape Town", "South Africa"),
+            ("Nairobi", "Kenya"),
+            
+            // Major Oceania destinations (international priority)
+            ("Sydney", "Australia"),
+            ("Melbourne", "Australia"),
+            ("Auckland", "New Zealand"),
+            
+            // US destinations (lower priority)
+            ("New York", "New York, USA"),
+            ("Los Angeles", "California, USA"),
+            ("San Francisco", "California, USA"),
+            ("Chicago", "Illinois, USA"),
             ("Miami", "Florida, USA"),
             ("Las Vegas", "Nevada, USA"),
-            ("San Francisco", "California, USA"),
-            ("Los Angeles", "California, USA"),
-            ("Chicago", "Illinois, USA"),
             ("Boston", "Massachusetts, USA"),
             ("Washington", "DC, USA"),
             ("Orlando", "Florida, USA"),
-            ("Cancun", "Mexico"),
+            ("Seattle", "Washington, USA"),
+            ("Hawaii", "USA"),
+            
+            // Countries and regions
             ("Costa Rica", "Costa Rica"),
             ("Iceland", "Iceland"),
             ("Norway", "Norway"),
             ("Switzerland", "Switzerland"),
             ("Ireland", "Ireland"),
-            ("Scotland", "United Kingdom"),
             ("Portugal", "Portugal"),
             ("Morocco", "Morocco"),
             ("Egypt", "Egypt"),
+            ("Greece", "Greece"),
+            ("Italy", "Italy"),
+            ("France", "France"),
+            ("Spain", "Spain"),
+            ("Germany", "Germany"),
+            ("Thailand", "Thailand"),
             ("India", "India"),
             ("China", "China"),
+            ("Japan", "Japan"),
             ("Australia", "Australia"),
             ("New Zealand", "New Zealand"),
             ("Brazil", "Brazil"),
             ("Argentina", "Argentina"),
             ("Chile", "Chile"),
             ("Peru", "Peru"),
-            ("Canada", "Canada"),
-            ("Montana", "USA"),
-            ("Montana", "Montana, USA"),
-            ("Montreal", "Quebec, Canada"),
-            ("Monaco", "Monaco"),
-            ("Morocco", "Morocco"),
-            ("Moscow", "Russia"),
-            ("Monterey", "California, USA")
+            ("Mexico", "Mexico"),
+            ("Canada", "Canada")
         ]
         
         let matchingDestinations = popularDestinations.filter { destination in
@@ -566,18 +872,42 @@ struct LocationResult: Identifiable, Equatable {
     func isWellKnownDestination(_ destination: String) -> Bool {
         // List of well-known travel destinations
         let majorDestinations = [
-            "paris", "london", "tokyo", "new york", "rome", "barcelona", "amsterdam",
-            "sydney", "dubai", "singapore", "hong kong", "bangkok", "istanbul",
-            "berlin", "vienna", "prague", "budapest", "florence", "venice",
-            "santorini", "mykonos", "bali", "maldives", "hawaii", "miami",
-            "las vegas", "san francisco", "los angeles", "chicago", "boston",
-            "washington", "orlando", "cancun", "cabo", "costa rica", "iceland",
-            "norway", "sweden", "switzerland", "austria", "ireland", "scotland",
-            "portugal", "morocco", "egypt", "south africa", "kenya", "tanzania",
-            "india", "nepal", "tibet", "china", "japan", "south korea",
-            "vietnam", "cambodia", "laos", "myanmar", "philippines", "indonesia",
-            "australia", "new zealand", "fiji", "tahiti", "brazil", "argentina",
-            "chile", "peru", "colombia", "ecuador", "mexico", "canada"
+            // Major European destinations
+            "paris", "london", "rome", "barcelona", "amsterdam", "berlin", "vienna", 
+            "prague", "budapest", "florence", "venice", "athens", "santorini", "mykonos",
+            "madrid", "lisbon", "dublin", "edinburgh", "stockholm", "copenhagen",
+            "oslo", "helsinki", "reykjavik", "zurich", "geneva", "brussels", "warsaw",
+            "krakow", "moscow", "st petersburg", "dubrovnik", "split", "zagreb",
+            
+            // Major Asian destinations  
+            "tokyo", "kyoto", "osaka", "beijing", "shanghai", "hong kong", "singapore",
+            "bangkok", "phuket", "seoul", "busan", "mumbai", "delhi", "goa", "kathmandu",
+            "istanbul", "cappadocia", "dubai", "abu dhabi", "doha", "kuwait city",
+            "tehran", "bali", "jakarta", "kuala lumpur", "manila", "ho chi minh city",
+            "hanoi", "phnom penh", "vientiane", "yangon", "colombo", "male",
+            
+            // Major destinations in Americas
+            "new york", "los angeles", "san francisco", "chicago", "boston", "miami",
+            "las vegas", "washington", "orlando", "seattle", "vancouver", "toronto",
+            "montreal", "mexico city", "cancun", "cabo", "guadalajara", "lima", "cusco",
+            "quito", "buenos aires", "rio de janeiro", "sao paulo", "santiago", "bogota",
+            "caracas", "havana",
+            
+            // Major African destinations
+            "cairo", "marrakech", "casablanca", "cape town", "johannesburg", "nairobi", 
+            "dar es salaam", "addis ababa", "lagos", "accra", "tunis", "algiers",
+            
+            // Major Oceania destinations
+            "sydney", "melbourne", "perth", "auckland", "wellington", "fiji", "tahiti",
+            
+            // Countries and regions
+            "costa rica", "iceland", "norway", "sweden", "switzerland", "austria", 
+            "ireland", "scotland", "portugal", "morocco", "egypt", "south africa", 
+            "kenya", "tanzania", "india", "nepal", "tibet", "china", "japan", 
+            "south korea", "vietnam", "cambodia", "laos", "myanmar", "philippines", 
+            "indonesia", "australia", "new zealand", "brazil", "argentina", "chile", 
+            "peru", "colombia", "ecuador", "mexico", "canada", "maldives", "hawaii",
+            "greece", "italy", "france", "spain", "germany", "netherlands", "thailand"
         ]
         
         let destinationLower = destination.lowercased()

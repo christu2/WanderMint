@@ -358,7 +358,7 @@ struct TripSubmissionView: View {
                 maxHeight: 150,
                 autocapitalization: .sentences,
                 autocorrection: true,
-                showDoneButton: true
+                showDoneButton: false
             )
         }
     }
