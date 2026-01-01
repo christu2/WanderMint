@@ -969,23 +969,186 @@ class TripService: ObservableObject, TripServiceProtocol {
     }
     
     private func parseTrainDetails(from data: [String: Any]) throws -> TrainDetails {
-        // Simplified implementation - you can expand this based on your needs
-        throw TravelAppError.dataError("Train details parsing not yet implemented")
+        // Parse with defensive defaults to prevent crashes
+        let trainNumber = data["trainNumber"] as? String ?? ""
+        let operatorName = data["operator"] as? String ?? data["operatorName"] as? String ?? ""
+        let duration = data["duration"] as? String ?? ""
+        let trainType = data["trainType"] as? String ?? "Train"
+        let bookingClass = data["bookingClass"] as? String ?? "Standard"
+        let bookingUrl = data["bookingUrl"] as? String
+        let bookingInstructions = data["bookingInstructions"] as? String
+        let notes = data["notes"] as? String
+
+        // Parse departure and arrival segments
+        let departure: FlightSegment
+        if let depData = data["departure"] as? [String: Any] {
+            departure = try parseFlightSegment(from: depData)
+        } else {
+            departure = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        let arrival: FlightSegment
+        if let arrData = data["arrival"] as? [String: Any] {
+            arrival = try parseFlightSegment(from: arrData)
+        } else {
+            arrival = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+
+        return TrainDetails(
+            trainNumber: trainNumber,
+            operatorName: operatorName,
+            departure: departure,
+            arrival: arrival,
+            duration: duration,
+            trainType: trainType,
+            cost: cost,
+            bookingClass: bookingClass,
+            bookingUrl: bookingUrl,
+            bookingInstructions: bookingInstructions,
+            notes: notes
+        )
     }
-    
+
     private func parseBusDetails(from data: [String: Any]) throws -> BusDetails {
-        // Simplified implementation - you can expand this based on your needs
-        throw TravelAppError.dataError("Bus details parsing not yet implemented")
+        // Parse with defensive defaults to prevent crashes
+        let busNumber = data["busNumber"] as? String
+        let operatorName = data["operator"] as? String ?? data["operatorName"] as? String ?? ""
+        let duration = data["duration"] as? String ?? ""
+        let busType = data["busType"] as? String ?? "Bus"
+        let bookingUrl = data["bookingUrl"] as? String
+        let bookingInstructions = data["bookingInstructions"] as? String
+        let notes = data["notes"] as? String
+
+        // Parse departure and arrival segments
+        let departure: FlightSegment
+        if let depData = data["departure"] as? [String: Any] {
+            departure = try parseFlightSegment(from: depData)
+        } else {
+            departure = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        let arrival: FlightSegment
+        if let arrData = data["arrival"] as? [String: Any] {
+            arrival = try parseFlightSegment(from: arrData)
+        } else {
+            arrival = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+
+        return BusDetails(
+            busNumber: busNumber,
+            operatorName: operatorName,
+            departure: departure,
+            arrival: arrival,
+            duration: duration,
+            busType: busType,
+            cost: cost,
+            bookingUrl: bookingUrl,
+            bookingInstructions: bookingInstructions,
+            notes: notes
+        )
     }
-    
+
     private func parseFerryDetails(from data: [String: Any]) throws -> FerryDetails {
-        // Simplified implementation - you can expand this based on your needs
-        throw TravelAppError.dataError("Ferry details parsing not yet implemented")
+        // Parse with defensive defaults to prevent crashes
+        let ferryNumber = data["ferryNumber"] as? String
+        let operatorName = data["operator"] as? String ?? data["operatorName"] as? String ?? ""
+        let duration = data["duration"] as? String ?? ""
+        let ferryType = data["ferryType"] as? String ?? "Ferry"
+        let vehicleSpace = data["vehicleSpace"] as? Bool
+        let bookingUrl = data["bookingUrl"] as? String
+        let bookingInstructions = data["bookingInstructions"] as? String
+        let notes = data["notes"] as? String
+
+        // Parse departure and arrival segments
+        let departure: FlightSegment
+        if let depData = data["departure"] as? [String: Any] {
+            departure = try parseFlightSegment(from: depData)
+        } else {
+            departure = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        let arrival: FlightSegment
+        if let arrData = data["arrival"] as? [String: Any] {
+            arrival = try parseFlightSegment(from: arrData)
+        } else {
+            arrival = FlightSegment(airport: "", airportCode: "", city: "", date: "", time: "", terminal: nil, gate: nil)
+        }
+
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+
+        return FerryDetails(
+            ferryNumber: ferryNumber,
+            operatorName: operatorName,
+            departure: departure,
+            arrival: arrival,
+            duration: duration,
+            ferryType: ferryType,
+            cost: cost,
+            vehicleSpace: vehicleSpace,
+            bookingUrl: bookingUrl,
+            bookingInstructions: bookingInstructions,
+            notes: notes
+        )
     }
-    
+
     private func parseCarRentalDetails(from data: [String: Any]) throws -> CarRentalDetails {
-        // Simplified implementation - you can expand this based on your needs
-        throw TravelAppError.dataError("Car rental details parsing not yet implemented")
+        // Parse with defensive defaults to prevent crashes
+        let company = data["company"] as? String ?? ""
+        let pickupLocation = data["pickupLocation"] as? String ?? ""
+        let dropoffLocation = data["dropoffLocation"] as? String ?? ""
+        let pickupDate = data["pickupDate"] as? String ?? ""
+        let pickupTime = data["pickupTime"] as? String ?? ""
+        let dropoffDate = data["dropoffDate"] as? String ?? ""
+        let dropoffTime = data["dropoffTime"] as? String ?? ""
+        let carType = data["carType"] as? String ?? "Car"
+        let bookingUrl = data["bookingUrl"] as? String
+        let bookingInstructions = data["bookingInstructions"] as? String
+        let notes = data["notes"] as? String
+
+        // Parse cost
+        let cost: FlexibleCost
+        if let costData = data["cost"] as? [String: Any] {
+            cost = try parseFlexibleCost(from: costData)
+        } else {
+            cost = FlexibleCost(cashOnly: 0)
+        }
+
+        return CarRentalDetails(
+            company: company,
+            pickupLocation: pickupLocation,
+            dropoffLocation: dropoffLocation,
+            pickupDate: pickupDate,
+            pickupTime: pickupTime,
+            dropoffDate: dropoffDate,
+            dropoffTime: dropoffTime,
+            carType: carType,
+            cost: cost,
+            bookingUrl: bookingUrl,
+            bookingInstructions: bookingInstructions,
+            notes: notes
+        )
     }
     
     // MARK: - Detailed Itinerary Parsing

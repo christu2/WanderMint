@@ -450,7 +450,21 @@ struct AdminTransportOption: Identifiable, Codable {
             }
         }
         
-        linkedSegmentId = try container.decodeIfPresent(String.self, forKey: .linkedSegmentId)
+        // Handle linkedSegmentId with explicit null handling
+        if container.contains(.linkedSegmentId) {
+            do {
+                // Try to decode as String first
+                linkedSegmentId = try container.decode(String.self, forKey: .linkedSegmentId)
+            } catch DecodingError.typeMismatch {
+                // If it's null/NSNull, set to nil
+                linkedSegmentId = try container.decodeIfPresent(String.self, forKey: .linkedSegmentId)
+            } catch {
+                // Any other error, set to nil
+                linkedSegmentId = nil
+            }
+        } else {
+            linkedSegmentId = nil
+        }
         
         // Handle recommendedSelection - could be Bool or Int (0/1) from admin dashboard
         do {

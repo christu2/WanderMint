@@ -59,36 +59,40 @@ class TripDataParser {
         let recommendation: Recommendation? = nil
         
         // Parse admin-compatible destination-based recommendation
+        // Enhanced destinationRecommendation parsing with fallback
         let destinationRecommendation: AdminDestinationBasedRecommendation?
         if let destRecData = data["destinationRecommendation"] as? [String: Any] {
             do {
-                // Sanitize data before parsing to remove NaN values
+                // Sanitize data before parsing
                 let sanitizedData = sanitizeDataForSerialization(destRecData)
                 let jsonData = try JSONSerialization.data(withJSONObject: sanitizedData)
-                
-                // Add detailed debugging
-                _ = String(data: jsonData, encoding: .utf8)
-                
                 destinationRecommendation = try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: jsonData)
             } catch {
+                Logger.error("Failed to parse destinationRecommendation: \(error)", category: Logger.data)
                 
-                // Try to get more specific error information
+                // Try to create a minimal recommendation with basic data
+                destinationRecommendation = createMinimalRecommendation(from: destRecData)
+                
+                // Log specific error details for debugging
                 if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .keyNotFound(let key, let context):
-                        Logger.error("Missing key: \(key.stringValue) at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", category: Logger.data)
-                    case .typeMismatch(let type, let context):
-                        Logger.error("Type mismatch for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", category: Logger.data)
-                    case .valueNotFound(let type, let context):
-                        Logger.error("Value not found for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", category: Logger.data)
-                    case .dataCorrupted(let context):
-                        Logger.error("Data corrupted at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))", category: Logger.data)
-                    @unknown default:
-                        Logger.error("Unknown decoding error: \(decodingError)", category: Logger.data)
-                    }
+                    logDecodingError(decodingError)
                 }
                 
-                destinationRecommendation = nil
+                // Add this temporary debugging code:
+                print("=== TRIP PARSING DEBUG ===")
+                print("Trip ID: \(id)")
+                print("Parsing failed for destinationRecommendation")
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .typeMismatch(let type, let context):
+                        print("Type mismatch: expected \(type) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                    case .keyNotFound(let key, let context):
+                        print("Missing key: \(key.stringValue) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                    default:
+                        print("Other error: \(decodingError)")
+                    }
+                }
+                print("=== END DEBUG ===")
             }
         } else {
             destinationRecommendation = nil
@@ -135,19 +139,85 @@ class TripDataParser {
         if let dict = data as? [String: Any] {
             var sanitizedDict: [String: Any] = [:]
             for (key, value) in dict {
-                sanitizedDict[key] = sanitizeDataForSerialization(value)
+                let sanitizedValue = sanitizeDataForSerialization(value)
+                
+                // Handle specific null-prone fields
+                if key == "linkedSegmentId" && sanitizedValue is NSNull {
+                    // Convert null linkedSegmentId to nil (omit from JSON)
+                    continue
+                }
+                
+                sanitizedDict[key] = sanitizedValue
             }
             return sanitizedDict
         } else if let array = data as? [Any] {
             return array.map { sanitizeDataForSerialization($0) }
         } else if let double = data as? Double {
-            // Replace NaN and infinite values with 0.0
             return double.isNaN || double.isInfinite ? 0.0 : double
         } else if let float = data as? Float {
-            // Replace NaN and infinite values with 0.0
             return float.isNaN || float.isInfinite ? 0.0 : Double(float)
+        } else if data is NSNull {
+            return NSNull()
+        } else if let stringValue = data as? String, stringValue.lowercased() == "nan" {
+            // Handle NaN that comes as string from Firestore
+            return 0.0
         } else {
+            // Additional NaN detection for Firestore edge cases
+            let description = String(describing: data)
+            if description.lowercased().contains("nan") || description == "nan" {
+                return 0.0
+            }
             return data
+        }
+    }
+    
+    private static func createMinimalRecommendation(from data: [String: Any]) -> AdminDestinationBasedRecommendation? {
+        do {
+            var minimalData: [String: Any] = [
+                "id": data["id"] as? String ?? UUID().uuidString,
+                "tripOverview": data["tripOverview"] as? String ?? "",
+                "destinations": [],
+                "logistics": [
+                    "transportSegments": [],
+                    "generalInstructions": "",
+                    "bookingDeadlines": []
+                ],
+                "totalCost": [
+                    "currency": "USD",
+                    "totalEstimate": 0,
+                    "accommodation": 0,
+                    "flights": 0,
+                    "food": 0,
+                    "activities": 0,
+                    "localTransport": 0,
+                    "miscellaneous": 0
+                ]
+            ]
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: minimalData)
+            return try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: jsonData)
+        } catch {
+            Logger.error("Failed to create minimal recommendation: \(error)", category: Logger.data)
+            return nil
+        }
+    }
+    
+    private static func logDecodingError(_ error: DecodingError) {
+        switch error {
+        case .typeMismatch(let type, let context):
+            let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+            Logger.error("Type mismatch at '\(path)': expected \(type)", category: Logger.data)
+        case .valueNotFound(let type, let context):
+            let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+            Logger.error("Value not found at '\(path)': expected \(type)", category: Logger.data)
+        case .keyNotFound(let key, let context):
+            let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+            Logger.error("Key not found: '\(key.stringValue)' at path '\(path)'", category: Logger.data)
+        case .dataCorrupted(let context):
+            let path = context.codingPath.map { $0.stringValue }.joined(separator: ".")
+            Logger.error("Data corrupted at '\(path)': \(context.debugDescription)", category: Logger.data)
+        @unknown default:
+            Logger.error("Unknown decoding error: \(error)", category: Logger.data)
         }
     }
 }

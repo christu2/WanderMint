@@ -2248,17 +2248,13 @@ class TripDetailViewModel: ObservableObject {
                 
                 let fetchedTrip = try await tripService.fetchTrip(tripId: tripId)
                 
-                // Only update if we got a complete trip with recommendation data
-                // or if we have no existing trip
+                // Always update with fetched data - don't reject trips without recommendations
                 if let fetchedTrip = fetchedTrip {
-                    // If the fetched trip has recommendation data, or we don't have a trip yet, use it
-                    if fetchedTrip.recommendation != nil || fetchedTrip.destinationRecommendation != nil || trip == nil {
-                        trip = fetchedTrip
-                    } else if let currentTrip = trip, currentTrip.recommendation != nil || currentTrip.destinationRecommendation != nil {
-                        // Keep existing trip if it has recommendation data and fetched doesn't
-                    } else {
-                        // Update with fetched data
-                        trip = fetchedTrip
+                    trip = fetchedTrip
+                    
+                    // Log if recommendation data is missing for debugging
+                    if fetchedTrip.destinationRecommendation == nil && fetchedTrip.recommendation == nil {
+                        Logger.info("Trip \(fetchedTrip.id) loaded without recommendation data", category: Logger.ui)
                     }
                 } else if trip == nil && initialTrip != nil {
                     // If fetch returned nil but we have initial data, use it
