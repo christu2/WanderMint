@@ -49,14 +49,15 @@ struct TripSubmissionView: View {
     @State private var latestStartDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     @State private var tripDuration = 7 // days
     
-    // New preference fields
-    @State private var budget = ""
-    @State private var travelStyle = "" // Explicitly empty - no default selection
+    // New preference fields - Using generated schemas for type safety
+    @State private var budget: Budget? = nil
+    @State private var travelStyle: TravelStyle? = nil // Explicitly empty - no default selection
     @State private var groupSize = 1
     @State private var specialRequests = ""
     @State private var selectedInterests: Set<String> = []
-    
-    let travelStyles = ["Budget", "Comfortable", "Luxury", "Adventure", "Relaxation"]
+
+    // Using generated enums from shared-schemas instead of hardcoded arrays
+    // This ensures iOS, Backend, and Admin all use the same valid values
     let interests = ["Culture", "Food", "Nature", "History", "Nightlife", "Shopping", "Adventure Sports", "Art", "Music", "Architecture"]
     
     var body: some View {
@@ -257,15 +258,34 @@ struct TripSubmissionView: View {
             VStack(spacing: AppTheme.Spacing.md) {
                 HStack(spacing: AppTheme.Spacing.md) {
                     VStack(alignment: .leading) {
-                        Text("Budget")
+                        Text("Budget Level")
                             .font(AppTheme.Typography.bodySmall)
                             .foregroundColor(AppTheme.Colors.textSecondary)
-                        
-                        StableBudgetTextField(text: $budget)
-                            .accessibilityLabel("Trip budget")
-                            .accessibilityHint("Enter your estimated trip budget")
+
+                        Menu {
+                            ForEach(Budget.allCases, id: \.self) { budgetOption in
+                                Button(budgetOption.displayName) {
+                                    budget = budgetOption
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                Text(budget?.displayName ?? "Select Budget")
+                                    .foregroundColor(budget == nil ? AppTheme.Colors.textTertiary : AppTheme.Colors.textPrimary)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundColor(AppTheme.Colors.textTertiary)
+                            }
+                            .padding(AppTheme.Spacing.md)
+                            .background(Color.white)
+                            .cornerRadius(AppTheme.CornerRadius.md)
+                            .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                        }
+                        .accessibilityLabel("Budget level: \(budget?.displayName ?? "Not selected")")
+                        .accessibilityHint("Select your budget preference (pricing tier, not amount)")
                     }
-                    
+
                     VStack(alignment: .leading) {
                         Text("Group Size")
                             .font(AppTheme.Typography.bodySmall)
@@ -284,17 +304,24 @@ struct TripSubmissionView: View {
                     Text("Travel Style")
                         .font(AppTheme.Typography.bodySmall)
                         .foregroundColor(AppTheme.Colors.textSecondary)
-                    
+
                     Menu {
-                        ForEach(travelStyles, id: \.self) { style in
-                            Button(style) {
+                        ForEach(TravelStyle.allCases, id: \.self) { style in
+                            Button(action: {
                                 travelStyle = style
+                            }) {
+                                VStack(alignment: .leading) {
+                                    Text(style.displayName)
+                                    Text(style.meaning)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
                             }
                         }
                     } label: {
                         HStack {
-                            Text(travelStyle.isEmpty ? "Select Style" : travelStyle)
-                                .foregroundColor(travelStyle.isEmpty ? AppTheme.Colors.textTertiary : AppTheme.Colors.textPrimary)
+                            Text(travelStyle?.displayName ?? "Select Style")
+                                .foregroundColor(travelStyle == nil ? AppTheme.Colors.textTertiary : AppTheme.Colors.textPrimary)
                             Spacer()
                             Image(systemName: "chevron.down")
                                 .font(.system(size: 12, weight: .semibold))
@@ -305,6 +332,8 @@ struct TripSubmissionView: View {
                         .cornerRadius(AppTheme.CornerRadius.md)
                         .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
                     }
+                    .accessibilityLabel("Travel style: \(travelStyle?.displayName ?? "Not selected")")
+                    .accessibilityHint("Select your travel pace and type preference")
                 }
             }
         }
@@ -488,8 +517,8 @@ struct TripSubmissionView: View {
         let departureValidation = FormValidation.validateDestinationEnhanced(departureLocation)
         let departureLocationValid = departureValidation.isValid
         
-        // Budget validation if provided
-        let budgetValid = budget.isEmpty || FormValidation.validateBudgetEnhanced(budget).isValid
+        // Budget is now an enum, always valid if selected (no need to validate string)
+        let budgetValid = true // Budget enum guarantees valid values
         
         // Special requests validation if provided
         let specialRequestsValid = specialRequests.isEmpty || FormValidation.validateMessageEnhanced(specialRequests).isValid
@@ -519,7 +548,8 @@ struct TripSubmissionView: View {
         
         // Sanitize other inputs
         let sanitizedDeparture = FormValidation.validateDestinationEnhanced(departureLocation).value ?? ""
-        let sanitizedBudget = FormValidation.validateBudgetEnhanced(budget).value ?? ""
+        // Budget is now an enum, use rawValue for API submission
+        let budgetValue = budget?.rawValue
         let sanitizedSpecialRequests = FormValidation.validateMessageEnhanced(specialRequests).value ?? ""
         
         let submission = EnhancedTripSubmission(
@@ -529,8 +559,8 @@ struct TripSubmissionView: View {
             endDate: endDateString,
             flexibleDates: flexibleDates,
             tripDuration: flexibleDates ? tripDuration : nil,
-            budget: sanitizedBudget.isEmpty ? nil : sanitizedBudget,
-            travelStyle: travelStyle,
+            budget: budgetValue,
+            travelStyle: travelStyle?.rawValue ?? "",
             groupSize: groupSize,
             specialRequests: sanitizedSpecialRequests,
             interests: Array(selectedInterests),
@@ -540,7 +570,7 @@ struct TripSubmissionView: View {
         // Track trip submission analytics
         AnalyticsService.shared.trackTripSubmission(
             destinationCount: destinations.filter { !$0.isEmpty }.count,
-            hasBudget: !budget.isEmpty,
+            hasBudget: budget != nil,
             flexibleDates: flexibleDates
         )
         
@@ -555,8 +585,8 @@ struct TripSubmissionView: View {
         startDate = Date()
         endDate = Date().addingTimeInterval(7 * 24 * 60 * 60)
         flexibleDates = false
-        budget = ""
-        travelStyle = ""
+        budget = nil
+        travelStyle = nil
         groupSize = 1
         specialRequests = ""
         selectedInterests = []
