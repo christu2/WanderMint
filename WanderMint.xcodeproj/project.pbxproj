@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		019DF5372F0959DC008E5D5D /* WanderMintSchemas in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5362F0959DC008E5D5D /* WanderMintSchemas */; };
 		82F16800CA37490F75C3ECDC /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C189666150DD4043AE5EC855 /* Pods_WanderMint.framework */; };
 		EDF5C7AA654B55C85AB3E64C /* Pods_WanderMintTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F3E3F951211C60B3CD69C1 /* Pods_WanderMintTests.framework */; };
 /* End PBXBuildFile section */
@@ -50,6 +51,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				019DF5372F0959DC008E5D5D /* WanderMintSchemas in Frameworks */,
 				82F16800CA37490F75C3ECDC /* Pods_WanderMint.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -180,6 +182,9 @@
 			);
 			mainGroup = 0137279C2E1F7FD700CDA2CF;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				019DF5352F0959DC008E5D5D /* XCRemoteSwiftPackageReference "wandermint-shared-schemas" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 013727A62E1F7FD700CDA2CF /* Products */;
 			projectDirPath = "";
@@ -696,6 +701,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		019DF5352F0959DC008E5D5D /* XCRemoteSwiftPackageReference "wandermint-shared-schemas" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/christu2/wandermint-shared-schemas";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		019DF5362F0959DC008E5D5D /* WanderMintSchemas */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 019DF5352F0959DC008E5D5D /* XCRemoteSwiftPackageReference "wandermint-shared-schemas" */;
+			productName = WanderMintSchemas;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0137279D2E1F7FD700CDA2CF /* Project object */;
 }

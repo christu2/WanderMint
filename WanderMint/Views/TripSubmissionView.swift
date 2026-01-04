@@ -1,5 +1,6 @@
 import SwiftUI
 import MapKit
+import WanderMintSchemas
 
 // MARK: - Interest Button Component (defined first)
 struct InterestButton: View {
