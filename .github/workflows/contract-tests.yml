@@ -63,19 +63,12 @@ jobs:
             echo "⚠️ Package.resolved not found"
           fi
 
-      - name: Build iOS app to verify types compile
-        run: |
-          echo "🔨 Building iOS app to verify Swift types compile..."
-          xcodebuild -scheme WanderMint \
-            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
-            clean build \
-            CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
-
       - name: Summary
         if: success()
         run: |
           echo "✅ All contract tests passed!"
           echo "✅ iOS is compatible with Backend"
           echo "✅ No enum conflicts detected"
-          echo "✅ Swift types compile successfully"
+          echo ""
+          echo "ℹ️  Swift compilation is verified by Xcode Cloud (not GitHub Actions)"
+          echo "ℹ️  Contract tests ensure iOS↔Backend compatibility"
