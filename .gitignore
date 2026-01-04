@@ -11,6 +11,8 @@ DerivedData/
 *.ipa
 *.xcworkspace/xcuserdata/
 *.xcworkspace/xcshareddata/
+# But allow Package.resolved for Xcode Cloud
+!*.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 # CocoaPods
 Pods/
