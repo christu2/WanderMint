@@ -10,10 +10,23 @@ echo "🔧 Xcode Cloud: Running post-clone script..."
 # The project has legacy CocoaPods references but we use Swift Package Manager now
 # Remove all CocoaPods references to prevent build errors
 
-echo "📦 Removing ALL CocoaPods references from Xcode project..."
-
 # Navigate to repository root (script runs from ci_scripts directory)
 cd ..
+
+echo "📦 Step 1: Removing Podfile to prevent CocoaPods from running..."
+if [ -f "Podfile" ]; then
+    rm -f Podfile Podfile.lock
+    echo "  ✅ Removed Podfile and Podfile.lock"
+else
+    echo "  ℹ️  No Podfile found (already removed)"
+fi
+
+if [ -d "Pods" ]; then
+    rm -rf Pods
+    echo "  ✅ Removed Pods directory"
+fi
+
+echo "📦 Step 2: Removing CocoaPods references from Xcode project..."
 
 PROJECT_FILE="WanderMint.xcodeproj/project.pbxproj"
 
