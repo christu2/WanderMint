@@ -8,9 +8,9 @@ set -e
 echo "🔧 Xcode Cloud: Running post-clone script..."
 
 # The project has legacy CocoaPods references but we use Swift Package Manager now
-# Remove the xcconfig file references that Xcode Cloud can't find
+# Remove all CocoaPods references to prevent build errors
 
-echo "📦 Removing CocoaPods xcconfig references from Xcode project..."
+echo "📦 Removing ALL CocoaPods references from Xcode project..."
 
 # Navigate to repository root (script runs from ci_scripts directory)
 cd ..
@@ -28,13 +28,27 @@ fi
 # Backup the project file
 cp "$PROJECT_FILE" "$PROJECT_FILE.backup"
 
-# Remove baseConfigurationReference lines that point to Pods xcconfig files
-# This prevents "Unable to open base configuration reference file" errors
+echo "  Removing baseConfigurationReference (xcconfig files)..."
 sed -i '' '/baseConfigurationReference.*Pods.*xcconfig/d' "$PROJECT_FILE"
 
-# Remove Pods framework references from the Frameworks build phase
+echo "  Removing Pods framework references..."
 sed -i '' '/Pods_.*\.framework in Frameworks/d' "$PROJECT_FILE"
 
-echo "✅ Removed CocoaPods references from project file"
-echo "📦 Project is using Swift Package Manager (wandermint-shared-schemas)"
-echo "🔨 Xcode Cloud will now build successfully"
+echo "  Removing [CP] Check Pods Manifest.lock build phase..."
+sed -i '' '/\[CP\] Check Pods Manifest\.lock/,/shellScript = /d' "$PROJECT_FILE"
+
+echo "  Removing [CP] Embed Pods Frameworks build phase..."
+sed -i '' '/\[CP\] Embed Pods Frameworks/,/shellScript = /d' "$PROJECT_FILE"
+
+echo "  Removing [CP] Copy Pods Resources build phase..."
+sed -i '' '/\[CP\] Copy Pods Resources/,/shellScript = /d' "$PROJECT_FILE"
+
+echo "  Removing Pods-*.xcfilelist references..."
+sed -i '' '/Pods-.*\.xcfilelist/d' "$PROJECT_FILE"
+
+echo "  Removing shellScript references to Pods..."
+sed -i '' '/shellScript.*Pods/d' "$PROJECT_FILE"
+
+echo "✅ Removed all CocoaPods references from project file"
+echo "📦 Project is now using Swift Package Manager only (wandermint-shared-schemas)"
+echo "🔨 Xcode Cloud will build successfully"
