@@ -12,7 +12,18 @@ echo "🔧 Xcode Cloud: Running post-clone script..."
 
 echo "📦 Removing CocoaPods xcconfig references from Xcode project..."
 
+# Navigate to repository root (script runs from ci_scripts directory)
+cd ..
+
 PROJECT_FILE="WanderMint.xcodeproj/project.pbxproj"
+
+# Verify project file exists
+if [ ! -f "$PROJECT_FILE" ]; then
+    echo "❌ Error: Project file not found at $PROJECT_FILE"
+    echo "Current directory: $(pwd)"
+    ls -la
+    exit 1
+fi
 
 # Backup the project file
 cp "$PROJECT_FILE" "$PROJECT_FILE.backup"
