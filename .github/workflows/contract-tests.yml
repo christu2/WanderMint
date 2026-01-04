@@ -1,0 +1,81 @@
+name: Contract Tests
+
+on:
+  pull_request:
+    paths:
+      - 'WanderMint/Models/**'
+      - 'WanderMint/Views/TripSubmissionView.swift'
+      - 'WanderMint.xcodeproj/project.pbxproj'
+      - '**/Package.resolved'
+  push:
+    branches:
+      - main
+    paths:
+      - 'WanderMint/Models/**'
+      - 'WanderMint/Views/TripSubmissionView.swift'
+      - 'WanderMint.xcodeproj/project.pbxproj'
+      - '**/Package.resolved'
+
+jobs:
+  contract-tests:
+    name: Validate iOS Contracts
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js for contract tests
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Clone shared-schemas repo
+        run: |
+          cd /tmp
+          git clone https://github.com/christu2/wandermint-shared-schemas.git
+          cd wandermint-shared-schemas
+          echo "📦 Cloned shared-schemas at version:"
+          git describe --tags --always
+
+      - name: Install shared-schemas dependencies
+        working-directory: /tmp/wandermint-shared-schemas
+        run: npm ci
+
+      - name: Run iOS→Backend contract tests
+        working-directory: /tmp/wandermint-shared-schemas
+        run: |
+          echo "🧪 Running iOS→Backend contract tests..."
+          npm test -- tests/pact/ios-backend.contract.test.js
+
+      - name: Validate enum consistency
+        working-directory: /tmp/wandermint-shared-schemas
+        run: |
+          echo "🔍 Validating enum conflicts..."
+          npm run validate:enums
+
+      - name: Check Swift Package version
+        run: |
+          echo "📦 Checking wandermint-shared-schemas version in Package.resolved..."
+          if [ -f "WanderMint.xcworkspace/xcshareddata/swiftpm/Package.resolved" ]; then
+            cat WanderMint.xcworkspace/xcshareddata/swiftpm/Package.resolved | grep -A 5 "wandermint-shared-schemas"
+          else
+            echo "⚠️ Package.resolved not found"
+          fi
+
+      - name: Build iOS app to verify types compile
+        run: |
+          echo "🔨 Building iOS app to verify Swift types compile..."
+          xcodebuild -scheme WanderMint \
+            -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
+            clean build \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: Summary
+        if: success()
+        run: |
+          echo "✅ All contract tests passed!"
+          echo "✅ iOS is compatible with Backend"
+          echo "✅ No enum conflicts detected"
+          echo "✅ Swift types compile successfully"
