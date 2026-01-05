@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		019DF5372F0959DC008E5D5D /* WanderMintSchemas in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5362F0959DC008E5D5D /* WanderMintSchemas */; };
-		82F16800CA37490F75C3ECDC /* Pods_WanderMint.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C189666150DD4043AE5EC855 /* Pods_WanderMint.framework */; };
-		EDF5C7AA654B55C85AB3E64C /* Pods_WanderMintTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 51F3E3F951211C60B3CD69C1 /* Pods_WanderMintTests.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,7 +50,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				019DF5372F0959DC008E5D5D /* WanderMintSchemas in Frameworks */,
-				82F16800CA37490F75C3ECDC /* Pods_WanderMint.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,7 +57,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EDF5C7AA654B55C85AB3E64C /* Pods_WanderMintTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -114,11 +110,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 013727B02E1F7FD700CDA2CF /* Build configuration list for PBXNativeTarget "WanderMint" */;
 			buildPhases = (
-				21260C46A2CEC0B2A84104CB /* [CP] Check Pods Manifest.lock */,
 				013727A12E1F7FD700CDA2CF /* Sources */,
 				013727A22E1F7FD700CDA2CF /* Frameworks */,
 				013727A32E1F7FD700CDA2CF /* Resources */,
-				698545020ADC31795F9FFBA1 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -136,7 +130,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0191FA902E2067140011E20F /* Build configuration list for PBXNativeTarget "WanderMintTests" */;
 			buildPhases = (
-				B1F4B7B08BE7302A6A5C95D6 /* [CP] Check Pods Manifest.lock */,
 				0191FA842E2067140011E20F /* Sources */,
 				0191FA852E2067140011E20F /* Frameworks */,
 				0191FA862E2067140011E20F /* Resources */,
@@ -212,74 +205,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		21260C46A2CEC0B2A84104CB /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-WanderMint-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		698545020ADC31795F9FFBA1 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-WanderMint/Pods-WanderMint-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		B1F4B7B08BE7302A6A5C95D6 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-WanderMintTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		013727A12E1F7FD700CDA2CF /* Sources */ = {
