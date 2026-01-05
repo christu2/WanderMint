@@ -428,7 +428,6 @@
 		};
 		013727B12E1F7FD700CDA2CF /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 64C7AC3028425CA12FCE4F2A /* Pods-WanderMint.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -531,7 +530,6 @@
 		};
 		013727B22E1F7FD700CDA2CF /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9CA0C8C09DB169AD59985AE0 /* Pods-WanderMint.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -634,7 +632,6 @@
 		};
 		0191FA8E2E2067140011E20F /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 05432DCF3CB61BE85F2C03D0 /* Pods-WanderMintTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -653,7 +650,6 @@
 		};
 		0191FA8F2E2067140011E20F /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 9E85B677AA405586B9545A6A /* Pods-WanderMintTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;

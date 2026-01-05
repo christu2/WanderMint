@@ -1,0 +1,15 @@
+{
+  "originHash" : "73668f80f0236799b8adb3f0073fd7516dda1500a8b430e0b40e0c1131f11b89",
+  "pins" : [
+    {
+      "identity" : "wandermint-shared-schemas",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/christu2/wandermint-shared-schemas",
+      "state" : {
+        "revision" : "4c0d100155e0484428000048d94726569594db29",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}
