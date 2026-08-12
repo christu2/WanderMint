@@ -146,4 +146,30 @@ class UserService: ObservableObject {
             onboardingCompletedAt: onboardingCompletedAt
         )
     }
+
+    /// Cache current user ID token securely in hardware Keychain
+    func cacheUserTokenSecurely() async {
+        #if canImport(FirebaseAuth)
+        if let user = Auth.auth().currentUser {
+            do {
+                let token = try await user.getIDToken()
+                KeychainManager.shared.save(key: "user_id_token", value: token)
+                KeychainManager.shared.save(key: "user_uid", value: user.uid)
+            } catch {
+                print("Failed to cache token securely in Keychain: \(error)")
+            }
+        }
+        #endif
+    }
+
+    /// Retrieve cached ID token from Keychain
+    func getCachedUserToken() -> String? {
+        return KeychainManager.shared.get(key: "user_id_token")
+    }
+
+    /// Clear cached credentials on sign out
+    func clearSecureSession() {
+        KeychainManager.shared.delete(key: "user_id_token")
+        KeychainManager.shared.delete(key: "user_uid")
+    }
 }
