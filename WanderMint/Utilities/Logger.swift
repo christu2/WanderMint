@@ -18,6 +18,11 @@ struct Logger {
         #endif
     }
     
+    /// Log warning messages (always logged)
+    static func warning(_ message: String, category: OSLog = .default) {
+        os_log("%@", log: category, type: .default, message)
+    }
+    
     /// Log error messages (always logged)
     static func error(_ message: String, category: OSLog = .default) {
         os_log("%@", log: category, type: .error, message)

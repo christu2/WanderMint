@@ -14,10 +14,17 @@ struct AdminDestinationBasedRecommendation: Identifiable, Codable {
     let logistics: AdminLogistics
     let totalCost: AdminTotalCost
     let createdAt: AppTimestamp?
+    let schemaVersion: String?
+    let lastModifiedBy: String?
     
     enum CodingKeys: String, CodingKey {
         case id, tripOverview, destinations, logistics, totalCost, createdAt
+        case schemaVersion = "_schemaVersion"
+        case lastModifiedBy = "_lastModifiedBy"
     }
+    
+    // Current expected schema version
+    static let currentSchemaVersion = "2.0.0"
     
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -29,6 +36,13 @@ struct AdminDestinationBasedRecommendation: Identifiable, Codable {
         logistics = try container.decodeIfPresent(AdminLogistics.self, forKey: .logistics) ?? AdminLogistics()
         totalCost = try container.decodeIfPresent(AdminTotalCost.self, forKey: .totalCost) ?? AdminTotalCost()
         createdAt = try container.decodeIfPresent(AppTimestamp.self, forKey: .createdAt)
+        schemaVersion = try container.decodeIfPresent(String.self, forKey: .schemaVersion)
+        lastModifiedBy = try container.decodeIfPresent(String.self, forKey: .lastModifiedBy)
+        
+        // Log schema version mismatch for debugging
+        if let version = schemaVersion, version != Self.currentSchemaVersion {
+            Logger.warning("Schema version mismatch: expected \(Self.currentSchemaVersion), got \(version)", category: Logger.data)
+        }
     }
     
     func encode(to encoder: Encoder) throws {
@@ -40,6 +54,31 @@ struct AdminDestinationBasedRecommendation: Identifiable, Codable {
         try container.encode(logistics, forKey: .logistics)
         try container.encode(totalCost, forKey: .totalCost)
         try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(schemaVersion, forKey: .schemaVersion)
+        try container.encode(lastModifiedBy, forKey: .lastModifiedBy)
+    }
+    
+    /// Validates that the recommendation has all required fields for the current schema
+    func validateForCurrentSchema() -> [String] {
+        var issues: [String] = []
+        
+        if destinations.isEmpty {
+            issues.append("No destinations defined")
+        }
+        
+        if logistics.transportSegments.isEmpty {
+            issues.append("No transport segments defined")
+        }
+        
+        if totalCost.totalEstimate == 0 {
+            issues.append("Total cost is zero")
+        }
+        
+        if schemaVersion != Self.currentSchemaVersion {
+            issues.append("Schema version mismatch: expected \(Self.currentSchemaVersion), got \(schemaVersion ?? "nil")")
+        }
+        
+        return issues
     }
 }
 

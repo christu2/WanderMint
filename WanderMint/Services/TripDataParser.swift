@@ -67,6 +67,12 @@ class TripDataParser {
                 let sanitizedData = sanitizeDataForSerialization(destRecData)
                 let jsonData = try JSONSerialization.data(withJSONObject: sanitizedData)
                 destinationRecommendation = try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: jsonData)
+                
+                // Validate parsed recommendation and log any issues
+                let validationIssues = destinationRecommendation?.validateForCurrentSchema() ?? []
+                if !validationIssues.isEmpty {
+                    Logger.warning("Recommendation validation issues for trip \(id): \(validationIssues.joined(separator: ", "))", category: Logger.data)
+                }
             } catch {
                 Logger.error("Failed to parse destinationRecommendation: \(error)", category: Logger.data)
                 
@@ -173,7 +179,7 @@ class TripDataParser {
     
     private static func createMinimalRecommendation(from data: [String: Any]) -> AdminDestinationBasedRecommendation? {
         do {
-            var minimalData: [String: Any] = [
+            let minimalData: [String: Any] = [
                 "id": data["id"] as? String ?? UUID().uuidString,
                 "tripOverview": data["tripOverview"] as? String ?? "",
                 "destinations": [],
@@ -191,7 +197,9 @@ class TripDataParser {
                     "activities": 0,
                     "localTransport": 0,
                     "miscellaneous": 0
-                ]
+                ],
+                "_schemaVersion": "2.0.0",
+                "_lastModifiedBy": "ios_fallback"
             ]
             
             let jsonData = try JSONSerialization.data(withJSONObject: minimalData)
