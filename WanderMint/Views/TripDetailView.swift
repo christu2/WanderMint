@@ -441,6 +441,30 @@ struct ActivitiesView: View {
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
+
+                    HStack(spacing: 12) {
+                        if let websiteUrl = activity.websiteUrl, !websiteUrl.isEmpty, let url = URL(string: websiteUrl) {
+                            Link(destination: url) {
+                                Label("Website", systemImage: "safari")
+                                    .font(.caption2)
+                            }
+                        }
+
+                        if let tripadvisorUrl = activity.tripadvisorUrl, !tripadvisorUrl.isEmpty, let url = URL(string: tripadvisorUrl) {
+                            Link(destination: url) {
+                                Label("TripAdvisor", systemImage: "star")
+                                    .font(.caption2)
+                            }
+                        }
+
+                        if let yelpUrl = activity.yelpUrl, !yelpUrl.isEmpty, let url = URL(string: yelpUrl) {
+                            Link(destination: url) {
+                                Label("Yelp", systemImage: "star")
+                                    .font(.caption2)
+                            }
+                        }
+                    }
+                    .padding(.top, 4)
                 }
                 .padding(.vertical, 4)
                 if activity.id != activities.last?.id {
@@ -471,6 +495,25 @@ struct AccommodationsView: View {
             
             ForEach(accommodations) { accommodation in
                 VStack(alignment: .leading, spacing: 4) {
+                    if let imageUrl = accommodation.imageUrl, let url = URL(string: imageUrl) {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(height: 150)
+                                .clipped()
+                                .cornerRadius(8)
+                        } placeholder: {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.2))
+                                .frame(height: 150)
+                                .overlay(
+                                    ProgressView()
+                                )
+                                .cornerRadius(8)
+                        }
+                    }
+
                     HStack {
                         Text(accommodation.name)
                             .font(.subheadline)
@@ -1581,6 +1624,39 @@ struct DailyActivityView: View {
                             .foregroundColor(.orange)
                     }
                 }
+
+                HStack(spacing: 12) {
+                    if let websiteUrl = activity.websiteUrl, !websiteUrl.isEmpty, let url = URL(string: websiteUrl) {
+                        Link(destination: url) {
+                            Label("Website", systemImage: "safari")
+                                .font(.caption2)
+                        }
+                    }
+
+                    if let tripadvisorUrl = activity.tripadvisorUrl, !tripadvisorUrl.isEmpty, let url = URL(string: tripadvisorUrl) {
+                        Link(destination: url) {
+                            Label("TripAdvisor", systemImage: "star")
+                                .font(.caption2)
+                        }
+                    }
+
+                    if let yelpUrl = activity.yelpUrl, !yelpUrl.isEmpty, let url = URL(string: yelpUrl) {
+                        Link(destination: url) {
+                            Label("Yelp", systemImage: "star")
+                                .font(.caption2)
+                        }
+                    }
+
+                    if !activity.location.address.isEmpty,
+                       let address = activity.location.address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+                       let url = URL(string: "maps://?q=\(address)") {
+                        Link(destination: url) {
+                            Label("Map", systemImage: "map")
+                                .font(.caption2)
+                        }
+                    }
+                }
+                .padding(.top, 4)
             }
             
             Spacer()
@@ -2097,6 +2173,18 @@ struct AccommodationActionButtonsView: View {
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(6)
+            }
+
+            if !accommodation.location.address.isEmpty,
+               let address = accommodation.location.address.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+               let url = URL(string: "maps://?q=\(address)") {
+                Link("Map", destination: url)
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange)
                     .foregroundColor(.white)
                     .cornerRadius(6)
             }

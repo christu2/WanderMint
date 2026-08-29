@@ -79,6 +79,14 @@ struct TripConversationView: View {
                     conversationStatusBadge(conversation.status)
                 }
             }
+
+            Divider()
+                .padding(.vertical, 4)
+
+            Text("Use this space to chat with our AI assistant or travel consultants. You can use templates for common requests or type your own custom messages. Responses will appear right here in the app!")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.leading)
         }
         .padding()
         .background(AppTheme.Colors.backgroundSecondary)

@@ -57,6 +57,10 @@ struct TripSubmissionView: View {
     @State private var specialRequests = ""
     @State private var selectedInterests: Set<String> = []
 
+    // Additional toggles
+    @State private var isPetFriendly = false
+    @State private var optInEmailNotifications = true
+
     // Using generated enums from shared-schemas instead of hardcoded arrays
     // This ensures iOS, Backend, and Admin all use the same valid values
     let interests = ["Culture", "Food", "Nature", "History", "Nightlife", "Shopping", "Adventure Sports", "Art", "Music", "Architecture"]
@@ -336,6 +340,23 @@ struct TripSubmissionView: View {
                     .accessibilityLabel("Travel style: \(travelStyle?.displayName ?? "Not selected")")
                     .accessibilityHint("Select your travel pace and type preference")
                 }
+
+                // Additional Options
+                VStack(spacing: AppTheme.Spacing.md) {
+                    Toggle("Pet Friendly Options", isOn: $isPetFriendly)
+                        .toggleStyle(SwitchToggleStyle(tint: AppTheme.Colors.primary))
+                        .padding(AppTheme.Spacing.md)
+                        .background(Color.white)
+                        .cornerRadius(AppTheme.CornerRadius.md)
+                        .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+
+                    Toggle("Email me when ready", isOn: $optInEmailNotifications)
+                        .toggleStyle(SwitchToggleStyle(tint: AppTheme.Colors.primary))
+                        .padding(AppTheme.Spacing.md)
+                        .background(Color.white)
+                        .cornerRadius(AppTheme.CornerRadius.md)
+                        .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+                }
             }
         }
     }
@@ -565,7 +586,9 @@ struct TripSubmissionView: View {
             groupSize: groupSize,
             specialRequests: sanitizedSpecialRequests,
             interests: Array(selectedInterests),
-            flightClass: nil
+            flightClass: nil,
+            isPetFriendly: isPetFriendly,
+            optInEmailNotifications: optInEmailNotifications
         )
         
         // Track trip submission analytics
@@ -594,6 +617,8 @@ struct TripSubmissionView: View {
         earliestStartDate = Date()
         latestStartDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
         tripDuration = 7
+        isPetFriendly = false
+        optInEmailNotifications = true
     }
     
     private func handleRecoveryAction(_ action: RecoveryAction) {

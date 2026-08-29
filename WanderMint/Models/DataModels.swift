@@ -19,10 +19,13 @@ struct EnhancedTripSubmission: Codable {
     let specialRequests: String
     let interests: [String]
     let flightClass: String?   // New field for flight preference
+    let isPetFriendly: Bool?
+    let optInEmailNotifications: Bool?
     
     enum CodingKeys: String, CodingKey {
         case destinations, departureLocation, startDate, endDate, flexibleDates, tripDuration
         case budget, travelStyle, groupSize, specialRequests, interests, flightClass
+        case isPetFriendly, optInEmailNotifications
     }
 }
 
@@ -759,9 +762,12 @@ struct DailyActivity: Identifiable, Codable {
     let bookingInstructions: String?
     let tips: [String]
     let category: ActivityCategory
+    let websiteUrl: String?
+    let tripadvisorUrl: String?
+    let yelpUrl: String?
     
     enum CodingKeys: String, CodingKey {
-        case id, time, duration, title, description, location, cost, bookingRequired, bookingUrl, bookingInstructions, tips, category
+        case id, time, duration, title, description, location, cost, bookingRequired, bookingUrl, bookingInstructions, tips, category, websiteUrl, tripadvisorUrl, yelpUrl
     }
 }
 
@@ -929,9 +935,10 @@ struct MealRecommendation: Identifiable, Codable {
     let reservationUrl: String?
     let reservationInstructions: String?
     let dietaryAccommodations: [String]
+    let yelpUrl: String?
     
     enum CodingKeys: String, CodingKey {
-        case id, type, time, restaurantName, cuisine, description, location, estimatedCost, reservationRequired, reservationUrl, reservationInstructions, dietaryAccommodations
+        case id, type, time, restaurantName, cuisine, description, location, estimatedCost, reservationRequired, reservationUrl, reservationInstructions, dietaryAccommodations, yelpUrl
     }
 }
 
@@ -1363,9 +1370,12 @@ struct Activity: Identifiable, Codable {
     let estimatedDuration: String
     let estimatedCost: Double
     let priority: Int // 1-5, with 1 being highest priority
+    let websiteUrl: String?
+    let tripadvisorUrl: String?
+    let yelpUrl: String?
     
     enum CodingKeys: String, CodingKey {
-        case id, name, description, category, estimatedDuration, estimatedCost, priority
+        case id, name, description, category, estimatedDuration, estimatedCost, priority, websiteUrl, tripadvisorUrl, yelpUrl
     }
 }
 
@@ -1377,9 +1387,10 @@ struct Accommodation: Identifiable, Codable {
     let priceRange: String
     let rating: Double
     let amenities: [String]
+    let imageUrl: String?
     
     enum CodingKeys: String, CodingKey {
-        case id, name, type, description, priceRange, rating, amenities
+        case id, name, type, description, priceRange, rating, amenities, imageUrl
     }
 }
 
