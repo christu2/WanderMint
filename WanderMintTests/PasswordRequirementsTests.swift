@@ -24,9 +24,9 @@ class PasswordRequirementsTests: XCTestCase {
     
     func testPartialPasswordRequirements() {
         // Test password that meets some but not all requirements
-        let partialPassword = "password"
+        let partialPassword = "passwordless"
         
-        XCTAssertTrue(isLengthRequirementMet(partialPassword), "8+ char password should meet length requirement")
+        XCTAssertTrue(isLengthRequirementMet(partialPassword), "12+ char password should meet length requirement")
         XCTAssertFalse(isUppercaseRequirementMet(partialPassword), "Lowercase-only password should not meet uppercase requirement")
         XCTAssertTrue(isLowercaseRequirementMet(partialPassword), "Password with lowercase should meet lowercase requirement")
         XCTAssertFalse(isNumberRequirementMet(partialPassword), "Password without numbers should not meet number requirement")
@@ -34,9 +34,9 @@ class PasswordRequirementsTests: XCTestCase {
     }
     
     func testPasswordWithUppercase() {
-        let password = "Password"
+        let password = "PasswordWord"
         
-        XCTAssertTrue(isLengthRequirementMet(password), "8+ char password should meet length requirement")
+        XCTAssertTrue(isLengthRequirementMet(password), "12+ char password should meet length requirement")
         XCTAssertTrue(isUppercaseRequirementMet(password), "Password with uppercase should meet uppercase requirement")
         XCTAssertTrue(isLowercaseRequirementMet(password), "Password with lowercase should meet lowercase requirement")
         XCTAssertFalse(isNumberRequirementMet(password), "Password without numbers should not meet number requirement")
@@ -44,9 +44,9 @@ class PasswordRequirementsTests: XCTestCase {
     }
     
     func testPasswordWithNumbers() {
-        let password = "Password123"
+        let password = "Password1234"
         
-        XCTAssertTrue(isLengthRequirementMet(password), "11 char password should meet length requirement")
+        XCTAssertTrue(isLengthRequirementMet(password), "12 char password should meet length requirement")
         XCTAssertTrue(isUppercaseRequirementMet(password), "Password with uppercase should meet uppercase requirement")
         XCTAssertTrue(isLowercaseRequirementMet(password), "Password with lowercase should meet lowercase requirement")
         XCTAssertTrue(isNumberRequirementMet(password), "Password with numbers should meet number requirement")
@@ -54,7 +54,7 @@ class PasswordRequirementsTests: XCTestCase {
     }
     
     func testCompletelyValidPassword() {
-        let validPassword = "Password123!"
+        let validPassword = "Password1234!"
         
         XCTAssertTrue(isLengthRequirementMet(validPassword), "Valid password should meet length requirement")
         XCTAssertTrue(isUppercaseRequirementMet(validPassword), "Valid password should meet uppercase requirement")
@@ -64,13 +64,13 @@ class PasswordRequirementsTests: XCTestCase {
     }
     
     func testPasswordLengthBoundaries() {
-        // Test exactly 7 characters (should fail)
-        let sevenChars = "Pass1@"
-        XCTAssertFalse(isLengthRequirementMet(sevenChars), "7 character password should not meet length requirement")
+        // Test exactly 11 characters (should fail)
+        let elevenChars = "Pass1@23456"
+        XCTAssertFalse(isLengthRequirementMet(elevenChars), "11 character password should not meet length requirement")
         
-        // Test exactly 8 characters (should pass)
-        let eightChars = "Pass1@23"
-        XCTAssertTrue(isLengthRequirementMet(eightChars), "8 character password should meet length requirement")
+        // Test exactly 12 characters (should pass)
+        let twelveChars = "Pass1@234567"
+        XCTAssertTrue(isLengthRequirementMet(twelveChars), "12 character password should meet length requirement")
         
         // Test very long password (should pass)
         let longPassword = "ThisIsAVeryLongPasswordThatExceedsNormalLength123!@#"
@@ -81,7 +81,7 @@ class PasswordRequirementsTests: XCTestCase {
         let specialChars = ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=", "{", "}", "[", "]", "|", "\\", ":", ";", "\"", "'", "<", ">", ",", ".", "?", "/", "~", "`"]
         
         for char in specialChars {
-            let password = "Password123\(char)"
+            let password = "Password1234\(char)"
             XCTAssertTrue(isSpecialCharRequirementMet(password), "Password with '\(char)' should meet special character requirement")
         }
     }
@@ -97,14 +97,14 @@ class PasswordRequirementsTests: XCTestCase {
         // Test various uppercase letters
         let uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for char in uppercaseLetters {
-            let password = "password123\(char)!"
+            let password = "password1234\(char)!"
             XCTAssertTrue(isUppercaseRequirementMet(password), "Password with uppercase '\(char)' should meet uppercase requirement")
         }
         
         // Test various lowercase letters
         let lowercaseLetters = "abcdefghijklmnopqrstuvwxyz"
         for char in lowercaseLetters {
-            let password = "PASSWORD123\(char)!"
+            let password = "PASSWORD1234\(char)!"
             XCTAssertTrue(isLowercaseRequirementMet(password), "Password with lowercase '\(char)' should meet lowercase requirement")
         }
     }
@@ -136,10 +136,10 @@ class PasswordRequirementsTests: XCTestCase {
         let invalidPasswords = [
             "",
             "short",
-            "password123",  // No uppercase or special char
-            "PASSWORD123",  // No lowercase or special char
-            "Password",     // No digit or special char
-            "Password123"   // No special char
+            "password1234",  // No uppercase or special char
+            "PASSWORD1234",  // No lowercase or special char
+            "PasswordWord",  // No digit or special char
+            "Password1234"   // No special char
         ]
         
         for password in invalidPasswords {
@@ -148,9 +148,9 @@ class PasswordRequirementsTests: XCTestCase {
         
         // Test passwords that should pass validation
         let validPasswords = [
-            "Password123!",
-            "MySecure1@",
-            "StrongP@ss1",
+            "Password1234!",
+            "MySecure1@234",
+            "StrongP@ss123",
             "ComplexP@ssw0rd!"
         ]
         
@@ -191,7 +191,7 @@ class PasswordRequirementsTests: XCTestCase {
     
     func testUnicodeCharacters() {
         // Test password with Unicode characters
-        let unicodePassword = "Pássw0rd123!"
+        let unicodePassword = "Pássw0rd1234!"
         XCTAssertTrue(isLengthRequirementMet(unicodePassword), "Unicode password should meet length requirement")
         XCTAssertTrue(isUppercaseRequirementMet(unicodePassword), "Unicode password should meet uppercase requirement")
         XCTAssertTrue(isLowercaseRequirementMet(unicodePassword), "Unicode password should meet lowercase requirement")
@@ -201,13 +201,13 @@ class PasswordRequirementsTests: XCTestCase {
     
     func testEmojisInPassword() {
         // Test password with emojis (should be treated as special characters)
-        let emojiPassword = "Password123😀"
+        let emojiPassword = "Password1234😀"
         XCTAssertTrue(isSpecialCharRequirementMet(emojiPassword), "Password with emoji should meet special character requirement")
     }
     
     func testWhitespaceInPassword() {
         // Test password with spaces (should be treated as special characters)
-        let spacePassword = "Password 123!"
+        let spacePassword = "Password 1234!"
         XCTAssertTrue(isSpecialCharRequirementMet(spacePassword), "Password with space should meet special character requirement")
     }
     
@@ -223,9 +223,12 @@ class PasswordRequirementsTests: XCTestCase {
             "Passw",       // 5 chars
             "Passwo",      // 6 chars
             "Passwor",     // 7 chars
-            "Password",    // 8 chars - meets length, upper, lower
+            "Password",    // 8 chars
             "Password1",   // 9 chars - adds number
-            "Password1!"   // 10 chars - adds special char (fully valid)
+            "Password12",  // 10 chars
+            "Password123", // 11 chars
+            "Password1234",// 12 chars
+            "Password1234!"// 13 chars - adds special char (fully valid)
         ]
         
         for (index, password) in progressivePasswords.enumerated() {
@@ -237,9 +240,9 @@ class PasswordRequirementsTests: XCTestCase {
             
             // Verify expected progression
             switch index {
-            case 0...6: // 1-7 characters
+            case 0...10: // 1-11 characters
                 XCTAssertFalse(lengthMet, "Password '\(password)' should not meet length requirement")
-            case 7...9: // 8+ characters
+            case 11...13: // 12+ characters
                 XCTAssertTrue(lengthMet, "Password '\(password)' should meet length requirement")
             default:
                 break
@@ -259,7 +262,7 @@ class PasswordRequirementsTests: XCTestCase {
                 XCTAssertFalse(numberMet, "Password '\(password)' should not meet number requirement")
             }
             
-            if index >= 9 { // Special char added at index 9
+            if index >= 12 { // Special char added at index 12
                 XCTAssertTrue(specialMet, "Password '\(password)' should meet special character requirement")
             } else {
                 XCTAssertFalse(specialMet, "Password '\(password)' should not meet special character requirement")
@@ -270,7 +273,7 @@ class PasswordRequirementsTests: XCTestCase {
     // MARK: - Helper Methods
     
     private func isLengthRequirementMet(_ password: String) -> Bool {
-        return password.count >= 8
+        return password.count >= 12
     }
     
     private func isUppercaseRequirementMet(_ password: String) -> Bool {
@@ -290,7 +293,7 @@ class PasswordRequirementsTests: XCTestCase {
     }
     
     private func generateRandomPassword() -> String {
-        let length = Int.random(in: 4...20)
+        let length = Int.random(in: 12...20)
         let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*"
         return String((0..<length).map { _ in characters.randomElement()! })
     }
@@ -332,7 +335,7 @@ class PasswordRequirementsAccessibilityTests: XCTestCase {
         // These tests would verify that the password requirements are accessible
         // to screen readers and other assistive technologies
         
-        let view = PasswordRequirementsView(password: "Password123!")
+        let view = PasswordRequirementsView(password: "Password1234!")
         XCTAssertNotNil(view, "Password requirements should be accessible")
         
         // In a real implementation, we would test:
@@ -343,7 +346,7 @@ class PasswordRequirementsAccessibilityTests: XCTestCase {
     }
     
     func testPasswordRequirementRowAccessibility() {
-        let metRow = PasswordRequirementRow(text: "At least 8 characters", isMet: true)
+        let metRow = PasswordRequirementRow(text: "At least 12 characters", isMet: true)
         let unmetRow = PasswordRequirementRow(text: "One uppercase letter", isMet: false)
         
         XCTAssertNotNil(metRow, "Met requirement should be accessible")

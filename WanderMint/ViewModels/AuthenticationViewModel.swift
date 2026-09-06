@@ -170,7 +170,7 @@ class AuthenticationViewModel: ObservableObject {
     }
     
     func isValidPassword(_ password: String) -> Bool {
-        guard password.count >= 8 else { return false }
+        guard password.count >= 12 else { return false }
         
         let hasUppercase = password.range(of: "[A-Z]", options: .regularExpression) != nil
         let hasLowercase = password.range(of: "[a-z]", options: .regularExpression) != nil

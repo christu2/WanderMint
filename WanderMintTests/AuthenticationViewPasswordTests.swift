@@ -45,11 +45,11 @@ class AuthenticationViewPasswordTests: XCTestCase {
     func testFormValidationIntegration() {
         // Test that form validation works correctly with password requirements
         let testCases = [
-            (email: "test@example.com", password: "Password123!", confirmPassword: "Password123!", name: "Test User", shouldBeValid: true),
+            (email: "test@example.com", password: "Password1234!", confirmPassword: "Password1234!", name: "Test User", shouldBeValid: true),
             (email: "test@example.com", password: "weak", confirmPassword: "weak", name: "Test User", shouldBeValid: false),
-            (email: "test@example.com", password: "Password123!", confirmPassword: "Different123!", name: "Test User", shouldBeValid: false),
-            (email: "invalid-email", password: "Password123!", confirmPassword: "Password123!", name: "Test User", shouldBeValid: false),
-            (email: "test@example.com", password: "Password123!", confirmPassword: "Password123!", name: "", shouldBeValid: false)
+            (email: "test@example.com", password: "Password1234!", confirmPassword: "Different1234!", name: "Test User", shouldBeValid: false),
+            (email: "invalid-email", password: "Password1234!", confirmPassword: "Password1234!", name: "Test User", shouldBeValid: false),
+            (email: "test@example.com", password: "Password1234!", confirmPassword: "Password1234!", name: "", shouldBeValid: false)
         ]
         
         for (email, password, confirmPassword, name, shouldBeValid) in testCases {
@@ -69,14 +69,14 @@ class AuthenticationViewPasswordTests: XCTestCase {
     
     func testPasswordRequirementsRealTimeUpdates() {
         // Test that password requirements update in real-time as user types
-        let progressivePassword = ["P", "Pa", "Pas", "Pass", "Passw", "Passwo", "Passwor", "Password", "Password1", "Password1!"]
+        let progressivePassword = ["P", "Pa", "Pas", "Pass", "Passw", "Passwo", "Passwor", "Password", "PasswordW", "PasswordWo", "PasswordWor", "PasswordWord", "Password1234", "Password1234!"]
         
         for password in progressivePassword {
             let view = PasswordRequirementsView(password: password)
             XCTAssertNotNil(view, "PasswordRequirementsView should update for progressive password: '\(password)'")
             
             // Test individual requirements for this password state
-            let lengthMet = password.count >= 8
+            let lengthMet = password.count >= 12
             let upperMet = password.range(of: "[A-Z]", options: .regularExpression) != nil
             let lowerMet = password.range(of: "[a-z]", options: .regularExpression) != nil
             let numberMet = password.range(of: "[0-9]", options: .regularExpression) != nil
@@ -90,19 +90,19 @@ class AuthenticationViewPasswordTests: XCTestCase {
                 XCTAssertFalse(lowerMet)
                 XCTAssertFalse(numberMet)
                 XCTAssertFalse(specialMet)
-            case "Password":
+            case "PasswordWord":
                 XCTAssertTrue(lengthMet)
                 XCTAssertTrue(upperMet)
                 XCTAssertTrue(lowerMet)
                 XCTAssertFalse(numberMet)
                 XCTAssertFalse(specialMet)
-            case "Password1":
+            case "Password1234":
                 XCTAssertTrue(lengthMet)
                 XCTAssertTrue(upperMet)
                 XCTAssertTrue(lowerMet)
                 XCTAssertTrue(numberMet)
                 XCTAssertFalse(specialMet)
-            case "Password1!":
+            case "Password1234!":
                 XCTAssertTrue(lengthMet)
                 XCTAssertTrue(upperMet)
                 XCTAssertTrue(lowerMet)
@@ -118,8 +118,8 @@ class AuthenticationViewPasswordTests: XCTestCase {
     
     func testPasswordRequirementRowVisualStates() {
         let requirements = [
-            (text: "At least 8 characters", isMet: false),
-            (text: "At least 8 characters", isMet: true),
+            (text: "At least 12 characters", isMet: false),
+            (text: "At least 12 characters", isMet: true),
             (text: "One uppercase letter", isMet: false),
             (text: "One uppercase letter", isMet: true),
             (text: "One lowercase letter", isMet: false),
@@ -139,11 +139,11 @@ class AuthenticationViewPasswordTests: XCTestCase {
     // MARK: - Accessibility and Usability Tests
     
     func testPasswordRequirementsAccessibility() {
-        let view = PasswordRequirementsView(password: "Password123!")
+        let view = PasswordRequirementsView(password: "Password1234!")
         XCTAssertNotNil(view, "PasswordRequirementsView should be accessible")
         
         // Test with various password states to ensure accessibility is maintained
-        let accessibilityTestPasswords = ["", "weak", "Password", "Password123", "Password123!"]
+        let accessibilityTestPasswords = ["", "weak", "PasswordWord", "Password1234", "Password1234!"]
         
         for password in accessibilityTestPasswords {
             let accessibleView = PasswordRequirementsView(password: password)
@@ -155,14 +155,14 @@ class AuthenticationViewPasswordTests: XCTestCase {
         // Test that password requirements provide clear feedback
         let usabilityTestCases = [
             (password: "", expectedMetRequirements: 0),
-            (password: "password", expectedMetRequirements: 2), // length + lowercase
-            (password: "Password", expectedMetRequirements: 3), // length, upper, lower
-            (password: "Password1", expectedMetRequirements: 4), // length, upper, lower, number
-            (password: "Password1!", expectedMetRequirements: 5) // all requirements
+            (password: "passwordless", expectedMetRequirements: 2), // length + lowercase
+            (password: "PasswordWord", expectedMetRequirements: 3), // length, upper, lower
+            (password: "Password1234", expectedMetRequirements: 4), // length, upper, lower, number
+            (password: "Password1234!", expectedMetRequirements: 5) // all requirements
         ]
         
         for (password, expectedCount) in usabilityTestCases {
-            let lengthMet = password.count >= 8
+            let lengthMet = password.count >= 12
             let upperMet = password.range(of: "[A-Z]", options: .regularExpression) != nil
             let lowerMet = password.range(of: "[a-z]", options: .regularExpression) != nil
             let numberMet = password.range(of: "[0-9]", options: .regularExpression) != nil
@@ -191,11 +191,11 @@ class AuthenticationViewPasswordTests: XCTestCase {
     
     func testPasswordRequirementsAnimation() {
         // Test that password requirements support animation
-        let animatedView = PasswordRequirementsView(password: "Password123!")
+        let animatedView = PasswordRequirementsView(password: "Password1234!")
         XCTAssertNotNil(animatedView, "Animated PasswordRequirementsView should be created")
         
         // Test animation with rapid password changes
-        let rapidPasswordChanges = ["P", "Pa", "Pass", "Password", "Password1", "Password1!"]
+        let rapidPasswordChanges = ["P", "Pa", "Pass", "PasswordWord", "Password1234", "Password1234!"]
         
         for password in rapidPasswordChanges {
             let animatedUpdate = PasswordRequirementsView(password: password)

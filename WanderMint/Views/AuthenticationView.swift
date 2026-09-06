@@ -257,8 +257,8 @@ struct PasswordRequirementsView: View {
                 .foregroundColor(AppTheme.Colors.textSecondary)
             
             PasswordRequirementRow(
-                text: "At least 8 characters",
-                isMet: password.count >= 8
+                text: "At least 12 characters",
+                isMet: password.count >= 12
             )
             
             PasswordRequirementRow(

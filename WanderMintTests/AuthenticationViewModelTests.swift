@@ -52,19 +52,19 @@ final class AuthenticationViewModelTests: XCTestCase {
     // MARK: - Password Validation Tests
     
     func testValidPassword() {
-        XCTAssertTrue(viewModel.isValidPassword("Password123!"))
-        XCTAssertTrue(viewModel.isValidPassword("StrongPass1@"))
-        XCTAssertTrue(viewModel.isValidPassword("MySecure123#"))
+        XCTAssertTrue(viewModel.isValidPassword("Password1234!"))
+        XCTAssertTrue(viewModel.isValidPassword("StrongPass12@"))
+        XCTAssertTrue(viewModel.isValidPassword("MySecure1234#"))
     }
     
     func testInvalidPassword() {
         XCTAssertFalse(viewModel.isValidPassword(""))
         XCTAssertFalse(viewModel.isValidPassword("12345"))
         XCTAssertFalse(viewModel.isValidPassword("short"))
-        XCTAssertFalse(viewModel.isValidPassword("password123"))  // No uppercase or special char
-        XCTAssertFalse(viewModel.isValidPassword("PASSWORD123"))  // No lowercase or special char
-        XCTAssertFalse(viewModel.isValidPassword("Password"))     // No digit or special char
-        XCTAssertFalse(viewModel.isValidPassword("Password123"))  // No special char
+        XCTAssertFalse(viewModel.isValidPassword("password1234"))  // No uppercase or special char
+        XCTAssertFalse(viewModel.isValidPassword("PASSWORD1234"))  // No lowercase or special char
+        XCTAssertFalse(viewModel.isValidPassword("PasswordWord"))  // No digit or special char
+        XCTAssertFalse(viewModel.isValidPassword("Password1234"))  // No special char
     }
     
     // MARK: - Password Requirements Integration Tests
@@ -74,11 +74,12 @@ final class AuthenticationViewModelTests: XCTestCase {
         let testPasswords = [
             ("", false),
             ("short", false),
-            ("password", false),
-            ("Password", false),
-            ("Password123", false),
-            ("Password123!", true),
-            ("MySecure1@", true),
+            ("passwordless", false),
+            ("PasswordWord", false),
+            ("Password1234", false),
+            ("Password123", false), // Too short
+            ("Password1234!", true),
+            ("MySecure1@23", true),
             ("ComplexP@ssw0rd!", true)
         ]
         
@@ -88,7 +89,7 @@ final class AuthenticationViewModelTests: XCTestCase {
             
             // Also test that individual requirements align with overall validation
             if shouldBeValid {
-                XCTAssertTrue(password.count >= 8, "Valid password should meet length requirement")
+                XCTAssertTrue(password.count >= 12, "Valid password should meet length requirement")
                 XCTAssertTrue(password.range(of: "[A-Z]", options: .regularExpression) != nil, "Valid password should have uppercase")
                 XCTAssertTrue(password.range(of: "[a-z]", options: .regularExpression) != nil, "Valid password should have lowercase")
                 XCTAssertTrue(password.range(of: "[0-9]", options: .regularExpression) != nil, "Valid password should have number")
@@ -101,10 +102,10 @@ final class AuthenticationViewModelTests: XCTestCase {
         // Ensure the password requirements logic is consistent between
         // AuthenticationViewModel and PasswordRequirementsView
         let passwords = [
-            "Password123!",
+            "Password1234!",
             "weak",
-            "StrongP@ss1",
-            "NoSpecialChar123",
+            "StrongP@ss12",
+            "NoSpecialChar1234",
             "nouppercasE1!",
             "NOLOWERCASE1!"
         ]
@@ -113,7 +114,7 @@ final class AuthenticationViewModelTests: XCTestCase {
             let authViewModelValid = viewModel.isValidPassword(password)
             
             // Simulate the logic from PasswordRequirementsView
-            let lengthMet = password.count >= 8
+            let lengthMet = password.count >= 12
             let upperMet = password.range(of: "[A-Z]", options: .regularExpression) != nil
             let lowerMet = password.range(of: "[a-z]", options: .regularExpression) != nil
             let numberMet = password.range(of: "[0-9]", options: .regularExpression) != nil
@@ -147,7 +148,7 @@ final class AuthenticationViewModelTests: XCTestCase {
         // Test loading state is set during sign in
         let expectation = expectation(description: "Loading state should be managed")
         
-        viewModel.signIn(email: "test@example.com", password: "Password123!")
+        viewModel.signIn(email: "test@example.com", password: "Password1234!")
         
         // Initially loading should be true
         XCTAssertTrue(viewModel.isLoading)
