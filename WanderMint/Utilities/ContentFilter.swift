@@ -23,26 +23,45 @@ class ContentFilter {
         "porn", "xxx", "sex", "nude", "naked", "erotic"
     ]
     
-    private let suspiciousPatterns = [
-        // Email patterns
-        #"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"#,
-        // Phone patterns
-        #"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"#,
-        // URL patterns
-        #"https?://[^\s]+"#,
-        // Credit card patterns (basic)
-        #"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"#,
-        // XSS patterns
-        #"<script[^>]*>.*?</script>"#,
-        #"javascript:"#,
-        #"<[^>]*on\w+\s*="#,
-        // SQL injection patterns
-        #"'.*--"#,
-        #";\s*drop\s+table"#,
-        #"union\s+select"#,
-        #"1'\s*or\s*'1'\s*=\s*'1"#
-    ]
+    private let compiledSuspiciousPatterns: [NSRegularExpression] = {
+        let suspiciousPatterns = [
+            // Email patterns
+            #"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"#,
+            // Phone patterns
+            #"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"#,
+            // URL patterns
+            #"https?://[^\s]+"#,
+            // Credit card patterns (basic)
+            #"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"#,
+            // XSS patterns
+            #"<script[^>]*>.*?</script>"#,
+            #"javascript:"#,
+            #"<[^>]*on\w+\s*="#,
+            // SQL injection patterns
+            #"'.*--"#,
+            #";\s*drop\s+table"#,
+            #"union\s+select"#,
+            #"1'\s*or\s*'1'\s*=\s*'1"#
+        ]
+        return suspiciousPatterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
+    }()
     
+    private let excessiveWhitespaceRegex = try! NSRegularExpression(pattern: #"\s+"#, options: [])
+    private let htmlTagsRegex = try! NSRegularExpression(pattern: #"<[^>]*>"#, options: [])
+    private let validDestinationRegex = try! NSRegularExpression(pattern: #"^[\p{L}\p{Emoji}\p{Mn}\s\-',\.]+$"#, options: [])
+    private let currencySymbolRegex = try! NSRegularExpression(pattern: #"[$,]"#, options: [])
+    private let validNameRegex = try! NSRegularExpression(pattern: #"^[\p{L}\s\-'\.]+$"#, options: [])
+    private let repeatedCharsRegex = try! NSRegularExpression(pattern: #"(.)\1{4,}"#, options: [])
+
+    private let compiledObfuscatedPatterns: [NSRegularExpression] = {
+        let obfuscatedPatterns = [
+            "f\\*ck", "f\\*cking", "sh\\*t", "d\\*mn", "b\\*tch", "\\*sshole",
+            "f.ck", "f.cking", "sh.t", "d.mn", "b.tch", ".sshole",
+            "f-ck", "f-cking", "sh-t", "d-mn", "b-tch", "-sshole"
+        ]
+        return obfuscatedPatterns.compactMap { try? NSRegularExpression(pattern: $0, options: [.caseInsensitive]) }
+    }()
+
     // MARK: - Public Methods
     
     /// Check if content contains inappropriate material
@@ -67,8 +86,9 @@ class ContentFilter {
         }
         
         // Check for suspicious patterns
-        for pattern in suspiciousPatterns {
-            if cleanText.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
+        let cleanTextRange = NSRange(cleanText.startIndex..., in: cleanText)
+        for regex in compiledSuspiciousPatterns {
+            if regex.firstMatch(in: cleanText, options: [], range: cleanTextRange) != nil {
                 return false
             }
         }
@@ -92,10 +112,12 @@ class ContentFilter {
         
         // Remove excessive whitespace
         sanitized = sanitized.trimmingCharacters(in: .whitespacesAndNewlines)
-        sanitized = sanitized.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+        let whitespaceRange = NSRange(sanitized.startIndex..., in: sanitized)
+        sanitized = excessiveWhitespaceRegex.stringByReplacingMatches(in: sanitized, options: [], range: whitespaceRange, withTemplate: " ")
         
         // Remove potential HTML/script tags
-        sanitized = sanitized.replacingOccurrences(of: #"<[^>]*>"#, with: "", options: .regularExpression)
+        let htmlTagsRange = NSRange(sanitized.startIndex..., in: sanitized)
+        sanitized = htmlTagsRegex.stringByReplacingMatches(in: sanitized, options: [], range: htmlTagsRange, withTemplate: "")
         
         // Remove control characters
         sanitized = sanitized.components(separatedBy: .controlCharacters).joined()
@@ -128,8 +150,8 @@ class ContentFilter {
         }
         
         // Check for valid characters (Unicode letters, emojis, spaces, hyphens, apostrophes, commas)
-        let validPattern = #"^[\p{L}\p{Emoji}\p{Mn}\s\-',\.]+$"#
-        if sanitized.range(of: validPattern, options: .regularExpression) == nil {
+        let sanitizedRange = NSRange(sanitized.startIndex..., in: sanitized)
+        if validDestinationRegex.firstMatch(in: sanitized, options: [], range: sanitizedRange) == nil {
             return .invalid("Destination contains invalid characters")
         }
         
@@ -173,7 +195,8 @@ class ContentFilter {
         }
         
         // Remove currency symbols and commas
-        let numericString = sanitized.replacingOccurrences(of: #"[$,]"#, with: "", options: .regularExpression)
+        let sanitizedRange = NSRange(sanitized.startIndex..., in: sanitized)
+        let numericString = currencySymbolRegex.stringByReplacingMatches(in: sanitized, options: [], range: sanitizedRange, withTemplate: "")
         
         // Check if it's a valid number
         guard let budgetValue = Double(numericString), budgetValue >= 0 else {
@@ -203,8 +226,8 @@ class ContentFilter {
         }
         
         // Check for valid name characters (Unicode letters, spaces, hyphens, apostrophes, periods)
-        let validPattern = #"^[\p{L}\s\-'\.]+$"#
-        if sanitized.range(of: validPattern, options: .regularExpression) == nil {
+        let sanitizedRange = NSRange(sanitized.startIndex..., in: sanitized)
+        if validNameRegex.firstMatch(in: sanitized, options: [], range: sanitizedRange) == nil {
             return .invalid("Name contains invalid characters")
         }
         
@@ -220,8 +243,8 @@ class ContentFilter {
     
     private func hasExcessiveRepetition(_ text: String) -> Bool {
         // Check for repeated characters (more than 4 in a row)
-        let repeatedCharsPattern = #"(.)\1{4,}"#
-        if text.range(of: repeatedCharsPattern, options: .regularExpression) != nil {
+        let textRange = NSRange(text.startIndex..., in: text)
+        if repeatedCharsRegex.firstMatch(in: text, options: [], range: textRange) != nil {
             return true
         }
         
@@ -256,14 +279,9 @@ class ContentFilter {
     
     private func containsObfuscatedProfanity(_ text: String) -> Bool {
         // Common obfuscation patterns for profanity
-        let obfuscatedPatterns = [
-            "f\\*ck", "f\\*cking", "sh\\*t", "d\\*mn", "b\\*tch", "\\*sshole",
-            "f.ck", "f.cking", "sh.t", "d.mn", "b.tch", ".sshole",
-            "f-ck", "f-cking", "sh-t", "d-mn", "b-tch", "-sshole"
-        ]
-        
-        for pattern in obfuscatedPatterns {
-            if text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
+        let textRange = NSRange(text.startIndex..., in: text)
+        for regex in compiledObfuscatedPatterns {
+            if regex.firstMatch(in: text, options: [], range: textRange) != nil {
                 return true
             }
         }
