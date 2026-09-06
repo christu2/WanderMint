@@ -151,25 +151,29 @@ class ConversationService: ObservableObject {
             throw TravelAppError.authenticationFailed
         }
         
+        let conversationRef = db.collection("tripConversations").document(conversationId)
+
         // Get unread admin messages
-        let unreadMessages = try await db.collection("tripConversations")
-            .document(conversationId)
+        let unreadMessages = try await conversationRef
             .collection("messages")
             .whereField("senderType", isEqualTo: "admin")
             .whereField("isRead", isEqualTo: false)
             .getDocuments()
+
+        guard !unreadMessages.isEmpty else { return }
         
         let batch = db.batch()
+        let updateData: [String: Any] = ["isRead": true]
         
         // Mark each message as read
         for messageDoc in unreadMessages.documents {
-            batch.updateData(["isRead": true], forDocument: messageDoc.reference)
+            batch.updateData(updateData, forDocument: messageDoc.reference)
         }
         
         // Update conversation unread count
         batch.updateData([
             "unreadUserCount": 0
-        ], forDocument: db.collection("tripConversations").document(conversationId))
+        ], forDocument: conversationRef)
         
         try await batch.commit()
     }
