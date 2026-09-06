@@ -281,9 +281,7 @@ struct ProfileView: View {
     }
     
     private func rateTheApp() {
-        // For now, open a generic App Store link
-        // TODO: Replace with actual App Store ID when app is published
-        if let url = URL(string: "https://apps.apple.com/") {
+        if let url = AppConfig.App.appStoreURL {
             UIApplication.shared.open(url)
         }
     }

@@ -18,6 +18,10 @@ struct AppConfig {
         static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         static let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         static let bundleId = Bundle.main.bundleIdentifier ?? "com.travelconsulting.app"
+        static let appStoreId = "0000000000" // TODO: Replace with actual App Store ID when published
+        static var appStoreURL: URL? {
+            URL(string: "https://apps.apple.com/app/id\(appStoreId)")
+        }
     }
     
     // MARK: - User Limits
