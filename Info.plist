@@ -22,6 +22,8 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>2</string>
+	<key>API_BASE_URL</key>
+	<string>https://us-central1-travel-consulting-app-1.cloudfunctions.net</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

@@ -5,7 +5,7 @@ struct AppConfig {
     
     // MARK: - API Configuration
     struct API {
-        static let baseURL = "https://us-central1-travel-consulting-app-1.cloudfunctions.net"
+        static let baseURL = Bundle.main.infoDictionary?["API_BASE_URL"] as? String ?? ""
         
         struct Endpoints {
             static let submitTrip = "\(baseURL)/submitTrip"
