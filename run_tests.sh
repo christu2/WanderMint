@@ -9,7 +9,7 @@ echo "🧪 Running WanderMint UI Fixes Test Suite"
 echo "========================================"
 
 # Configuration
-PROJECT_PATH="/Users/nick/Development/travelBusiness/WanderMint"
+PROJECT_PATH="."
 SCHEME="WanderMint"
 DESTINATION="platform=iOS Simulator,name=iPhone 16"
 COVERAGE_DIR="$PROJECT_PATH/coverage"
