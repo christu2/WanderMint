@@ -23,25 +23,40 @@ class ContentFilter {
         "porn", "xxx", "sex", "nude", "naked", "erotic"
     ]
     
-    private let suspiciousPatterns = [
-        // Email patterns
-        #"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"#,
-        // Phone patterns
-        #"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"#,
-        // URL patterns
-        #"https?://[^\s]+"#,
-        // Credit card patterns (basic)
-        #"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"#,
-        // XSS patterns
-        #"<script[^>]*>.*?</script>"#,
-        #"javascript:"#,
-        #"<[^>]*on\w+\s*="#,
-        // SQL injection patterns
-        #"'.*--"#,
-        #";\s*drop\s+table"#,
-        #"union\s+select"#,
-        #"1'\s*or\s*'1'\s*=\s*'1"#
-    ]
+    // Precompiled regular expressions for performance
+    private lazy var suspiciousRegexes: [NSRegularExpression] = {
+        let patterns = [
+            // Email patterns
+            #"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"#,
+            // Phone patterns
+            #"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b"#,
+            // URL patterns
+            #"https?://[^\s]+"#,
+            // Credit card patterns (basic)
+            #"\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b"#,
+            // XSS patterns
+            #"<script[^>]*>.*?</script>"#,
+            #"javascript:"#,
+            #"<[^>]*on\w+\s*="#,
+            // SQL injection patterns
+            #"'.*--"#,
+            #";\s*drop\s+table"#,
+            #"union\s+select"#,
+            #"1'\s*or\s*'1'\s*=\s*'1"#
+        ]
+        return patterns.compactMap { try? NSRegularExpression(pattern: $0, options: .caseInsensitive) }
+    }()
+
+    private lazy var obfuscatedProfanityRegex: NSRegularExpression? = {
+        // Common obfuscation patterns for profanity
+        let obfuscatedPatterns = [
+            "f\\*ck", "f\\*cking", "sh\\*t", "d\\*mn", "b\\*tch", "\\*sshole",
+            "f.ck", "f.cking", "sh.t", "d.mn", "b.tch", ".sshole",
+            "f-ck", "f-cking", "sh-t", "d-mn", "b-tch", "-sshole"
+        ]
+        let combinedPattern = obfuscatedPatterns.joined(separator: "|")
+        return try? NSRegularExpression(pattern: combinedPattern, options: .caseInsensitive)
+    }()
     
     // MARK: - Public Methods
     
@@ -67,8 +82,10 @@ class ContentFilter {
         }
         
         // Check for suspicious patterns
-        for pattern in suspiciousPatterns {
-            if cleanText.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
+        let nsString = cleanText as NSString
+        let fullRange = NSRange(location: 0, length: nsString.length)
+        for regex in suspiciousRegexes {
+            if regex.firstMatch(in: cleanText, options: [], range: fullRange) != nil {
                 return false
             }
         }
@@ -255,20 +272,10 @@ class ContentFilter {
     }
     
     private func containsObfuscatedProfanity(_ text: String) -> Bool {
-        // Common obfuscation patterns for profanity
-        let obfuscatedPatterns = [
-            "f\\*ck", "f\\*cking", "sh\\*t", "d\\*mn", "b\\*tch", "\\*sshole",
-            "f.ck", "f.cking", "sh.t", "d.mn", "b.tch", ".sshole",
-            "f-ck", "f-cking", "sh-t", "d-mn", "b-tch", "-sshole"
-        ]
-        
-        for pattern in obfuscatedPatterns {
-            if text.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil {
-                return true
-            }
-        }
-        
-        return false
+        guard let regex = obfuscatedProfanityRegex else { return false }
+        let nsString = text as NSString
+        let fullRange = NSRange(location: 0, length: nsString.length)
+        return regex.firstMatch(in: text, options: [], range: fullRange) != nil
     }
 }
 
