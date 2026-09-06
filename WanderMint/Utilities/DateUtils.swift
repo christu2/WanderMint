@@ -3,6 +3,20 @@ import Foundation
 // MARK: - Date Utilities for Timezone-Agnostic Handling
 struct DateUtils {
     
+    // MARK: - ISO8601 Formatters
+
+    /// Shared static instance of ISO8601DateFormatter for basic parsing to improve performance
+    static let iso8601Formatter: ISO8601DateFormatter = {
+        return ISO8601DateFormatter()
+    }()
+
+    /// Shared static instance of ISO8601DateFormatter for backend communication with fractional seconds
+    static let iso8601BackendFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
     // MARK: - Date-Only Formatters
     
     /// Creates a date formatter for date-only strings (YYYY-MM-DD) without timezone conversion

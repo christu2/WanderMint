@@ -132,14 +132,11 @@ class TripService: ObservableObject, TripServiceProtocol {
         // Get ID token for authentication
         let idToken = try await user.getIDToken()
         
-        // Format dates for the backend - use ISO 8601 format
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
+        // Format dates for the backend - use shared ISO 8601 format for better performance
         var requestData: [String: Any] = [
             "destination": submission.destination,
-            "startDate": dateFormatter.string(from: submission.startDate),
-            "endDate": dateFormatter.string(from: submission.endDate),
+            "startDate": DateUtils.iso8601BackendFormatter.string(from: submission.startDate),
+            "endDate": DateUtils.iso8601BackendFormatter.string(from: submission.endDate),
             "flexibleDates": submission.flexibleDates
         ]
         

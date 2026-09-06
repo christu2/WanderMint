@@ -132,9 +132,8 @@ class TripDataParser {
         if let timestamp = data as? AppTimestamp {
             return timestamp
         } else if let dateString = data as? String {
-            // Handle string dates (ISO format)
-            let formatter = ISO8601DateFormatter()
-            if let date = formatter.date(from: dateString) {
+            // Handle string dates (ISO format) using shared formatter for performance
+            if let date = DateUtils.iso8601Formatter.date(from: dateString) {
                 return createTimestamp(date: date)
             }
         }
