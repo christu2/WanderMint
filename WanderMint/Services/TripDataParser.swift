@@ -85,6 +85,7 @@ class TripDataParser {
                 }
                 
                 // Add this temporary debugging code:
+                #if DEBUG
                 print("=== TRIP PARSING DEBUG ===")
                 print("Trip ID: \(id)")
                 print("Parsing failed for destinationRecommendation")
@@ -99,6 +100,7 @@ class TripDataParser {
                     }
                 }
                 print("=== END DEBUG ===")
+                #endif
             }
         } else {
             destinationRecommendation = nil
