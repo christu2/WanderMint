@@ -779,8 +779,8 @@ struct AdminTransportOptionView: View {
             
             // Action buttons
             HStack {
-                if !option.bookingUrl.isEmpty {
-                    Link(destination: URL(string: option.bookingUrl)!) {
+                if !option.bookingUrl.isEmpty, let url = URL(string: option.bookingUrl) {
+                    Link(destination: url) {
                         HStack {
                             Image(systemName: "globe")
                             Text(option.isRoundTrip == true ? "Book Round Trip" : "Book Flight")
