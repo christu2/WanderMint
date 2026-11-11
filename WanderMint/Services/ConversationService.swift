@@ -273,13 +273,35 @@ class ConversationService: ObservableObject {
             senderType: ConversationMessage.SenderType(rawValue: data["senderType"] as? String ?? "user") ?? .user,
             messageType: ConversationMessage.MessageType(rawValue: data["messageType"] as? String ?? "text") ?? .text,
             content: data["content"] as? String ?? "",
-            attachments: nil, // TODO: Parse attachments if needed
+            attachments: parseMessageAttachments(from: data["attachments"] as? [[String: Any]]),
             timestamp: data["timestamp"] as? AppTimestamp ?? createTimestamp(),
             isRead: data["isRead"] as? Bool ?? false,
             metadata: parseMessageMetadata(from: data["metadata"] as? [String: Any])
         )
     }
     
+    private func parseMessageAttachments(from data: [[String: Any]]?) -> [MessageAttachment]? {
+        guard let data = data else { return nil }
+
+        return data.compactMap { dict in
+            guard let id = dict["id"] as? String,
+                  let fileName = dict["fileName"] as? String,
+                  let fileType = dict["fileType"] as? String,
+                  let fileSize = dict["fileSize"] as? Int,
+                  let downloadUrl = dict["downloadUrl"] as? String else {
+                return nil
+            }
+
+            return MessageAttachment(
+                id: id,
+                fileName: fileName,
+                fileType: fileType,
+                fileSize: fileSize,
+                downloadUrl: downloadUrl
+            )
+        }
+    }
+
     private func parseMessageMetadata(from data: [String: Any]?) -> MessageMetadata? {
         guard let data = data else { return nil }
         
@@ -323,6 +345,18 @@ class ConversationService: ObservableObject {
             ]
         }
         
+        if let attachments = message.attachments {
+            data["attachments"] = attachments.map { attachment in
+                return [
+                    "id": attachment.id,
+                    "fileName": attachment.fileName,
+                    "fileType": attachment.fileType,
+                    "fileSize": attachment.fileSize,
+                    "downloadUrl": attachment.downloadUrl
+                ]
+            }
+        }
+
         return data
     }
 }
