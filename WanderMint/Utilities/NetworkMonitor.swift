@@ -52,10 +52,14 @@ class NetworkMonitor: ObservableObject {
 // MARK: - Network Error Handling
 extension TravelAppError {
     static func networkUnavailable() -> TravelAppError {
-        return .networkError("No internet connection. Please check your network settings and try again.")
+        return .networkError("Network connection unavailable")
     }
     
     static func requestTimeout() -> TravelAppError {
-        return .networkError("Request timed out. Please check your connection and try again.")
+        return .networkError("Request timed out")
+    }
+
+    static func invalidResponse() -> TravelAppError {
+        return .networkError("Invalid response from server")
     }
 }
