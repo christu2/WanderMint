@@ -47,6 +47,8 @@ class TripService: ObservableObject, TripServiceProtocol {
             "budget": submission.budget ?? "",
             "travelStyle": submission.travelStyle,
             "groupSize": submission.groupSize,
+            "petFriendly": submission.petFriendly ?? false,
+            "optInEmailNotifications": submission.optInEmailNotifications ?? true,
             "specialRequests": submission.specialRequests,
             "interests": submission.interests
         ]

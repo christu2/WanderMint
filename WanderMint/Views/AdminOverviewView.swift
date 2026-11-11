@@ -5,19 +5,17 @@ struct AdminCostBreakdownView: View {
     let recommendation: AdminDestinationBasedRecommendation
     
     // Calculate costs dynamically like travelAdmin does
-    private var calculatedCosts: (transportCash: Double, transportPoints: Int, accommodationCash: Double, accommodationPoints: Int) {
+    private var calculatedCosts: (transportCash: Double, transportPoints: Int, accommodationCash: Double, accommodationPoints: Int, pointsByProgram: [String: Int]) {
         var transportCash: Double = 0
         var transportPoints: Int = 0
         var accommodationCash: Double = 0
         var accommodationPoints: Int = 0
+        var pointsByProgram: [String: Int] = [:]
         
         // Calculate transportation costs (user selected option or highest priority option per segment)
         for segment in recommendation.logistics.transportSegments {
             if !segment.transportOptions.isEmpty {
-                // Use selected transport option if available, otherwise fall back to highest priority
                 let selectedOption: AdminTransportOption?
-                
-                // Check UserDefaults first, then data model, then default to priority
                 let localSelection = UserDefaults.standard.string(forKey: "selected_transport_option_\(segment.id)")
                 let selectedId = localSelection ?? segment.selectedOptionId
                 
@@ -29,7 +27,12 @@ struct AdminCostBreakdownView: View {
                 
                 if let option = selectedOption {
                     transportCash += option.cost.cashAmount
-                    transportPoints += option.cost.pointsAmount ?? 0
+                    let pts = option.cost.pointsAmount ?? 0
+                    transportPoints += pts
+                    if pts > 0 {
+                        let program = (option.cost.pointsProgram?.isEmpty == false) ? option.cost.pointsProgram! : "Airline/Transfer"
+                        pointsByProgram[program, default: 0] += pts
+                    }
                 }
             }
         }
@@ -37,10 +40,7 @@ struct AdminCostBreakdownView: View {
         // Calculate accommodation costs (user selected option or highest priority option per destination)
         for destination in recommendation.destinations {
             if !destination.accommodationOptions.isEmpty {
-                // Use selected accommodation if available, otherwise fall back to highest priority
                 let selectedAccommodation: AdminAccommodationOption?
-                
-                // Check UserDefaults first, then data model, then default to priority
                 let localSelection = UserDefaults.standard.string(forKey: "selected_accommodation_\(destination.id)")
                 let selectedId = localSelection ?? destination.selectedAccommodationId
                 
@@ -51,34 +51,46 @@ struct AdminCostBreakdownView: View {
                 }
                 
                 if let accommodation = selectedAccommodation {
-                    let nights = destination.numberOfNights
+                    let nights = max(1, destination.numberOfNights)
                     accommodationCash += accommodation.hotel.pricePerNight * Double(nights)
-                    accommodationPoints += (accommodation.hotel.pointsPerNight ?? 0) * nights
+                    let pts = (accommodation.hotel.pointsPerNight ?? 0) * nights
+                    accommodationPoints += pts
+                    if pts > 0 {
+                        let program = (accommodation.hotel.loyaltyProgram?.isEmpty == false) ? accommodation.hotel.loyaltyProgram! : "Hotel Points"
+                        pointsByProgram[program, default: 0] += pts
+                    }
                 }
             }
         }
         
-        return (transportCash, transportPoints, accommodationCash, accommodationPoints)
+        if pointsByProgram.isEmpty, let explicitPoints = totalCost.pointsUsed {
+            pointsByProgram = explicitPoints
+        }
+        
+        return (transportCash, transportPoints, accommodationCash, accommodationPoints, pointsByProgram)
     }
     
     private var totalCashEstimate: Double {
         let costs = calculatedCosts
-        return costs.transportCash + costs.accommodationCash
+        let computed = costs.transportCash + costs.accommodationCash
+        return computed > 0 ? computed : totalCost.totalEstimate
     }
     
     private var totalPoints: Int {
         let costs = calculatedCosts
-        return costs.transportPoints + costs.accommodationPoints
+        let computed = costs.transportPoints + costs.accommodationPoints
+        if computed > 0 { return computed }
+        return costs.pointsByProgram.values.reduce(0, +)
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Cost Breakdown")
+            Text("Cost & Points Breakdown")
                 .font(.headline)
             
             // Total estimate - focus on cash and points for logistics & accommodation
             VStack(spacing: 12) {
-                if totalCashEstimate > 0 {
+                if totalCashEstimate > 0 || totalPoints == 0 {
                     HStack {
                         Text("Total Cash Estimate")
                             .font(.title3)
@@ -97,7 +109,7 @@ struct AdminCostBreakdownView: View {
                             .font(.title3)
                             .bold()
                         Spacer()
-                        Text("\(totalPoints) pts")
+                        Text("\(totalPoints.formatted()) pts")
                             .font(.title3)
                             .bold()
                             .foregroundColor(.blue)
@@ -108,15 +120,90 @@ struct AdminCostBreakdownView: View {
             .background(Color.green.opacity(0.1))
             .cornerRadius(12)
             
-            // Cost breakdown - only logistics and accommodations
+            // Category Breakdown
             VStack(spacing: 8) {
                 let costs = calculatedCosts
                 AdminCostRow(label: "Transportation", amount: costs.transportCash, currency: totalCost.currency, points: costs.transportPoints)
                 AdminCostRow(label: "Accommodation", amount: costs.accommodationCash, currency: totalCost.currency, points: costs.accommodationPoints)
+                if totalCost.activities > 0 {
+                    AdminCostRow(label: "Activities", amount: totalCost.activities, currency: totalCost.currency)
+                }
+                if totalCost.food > 0 {
+                    AdminCostRow(label: "Dining & Food", amount: totalCost.food, currency: totalCost.currency)
+                }
             }
             .padding()
             .background(Color(UIColor.systemGray6))
             .cornerRadius(12)
+            
+            // Per-Program Points Breakdown
+            let programs = calculatedCosts.pointsByProgram.sorted { $0.key < $1.key }
+            if !programs.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "creditcard.fill")
+                            .foregroundColor(.blue)
+                        Text("Points Required by Program")
+                            .font(.subheadline)
+                            .bold()
+                    }
+                    
+                    ForEach(programs, id: \.key) { program, pts in
+                        HStack {
+                            Text(program)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(pts.formatted()) pts")
+                                .font(.subheadline)
+                                .bold()
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                .padding()
+                .background(Color.blue.opacity(0.06))
+                .cornerRadius(12)
+            }
+            
+            // Points Strategy / Cost Notes
+            if let costNotes = recommendation.costNotes, !costNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkles")
+                            .foregroundColor(.purple)
+                        Text("Points & Booking Strategy")
+                            .font(.subheadline)
+                            .bold()
+                    }
+                    Text(costNotes)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color.purple.opacity(0.08))
+                .cornerRadius(12)
+            }
+            
+            if let specialNotes = recommendation.specialNotes, !specialNotes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "note.text")
+                            .foregroundColor(.orange)
+                        Text("Additional Notes")
+                            .font(.subheadline)
+                            .bold()
+                    }
+                    Text(specialNotes)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(Color.orange.opacity(0.08))
+                .cornerRadius(12)
+            }
         }
     }
 }
@@ -146,7 +233,7 @@ struct AdminCostRow: View {
                         .bold()
                 }
                 if points > 0 {
-                    Text("\(points) pts")
+                    Text("\(points.formatted()) pts")
                         .font(.caption)
                         .foregroundColor(.blue)
                 }
@@ -197,6 +284,13 @@ struct AdminDestinationSummaryView: View {
             Text("\(destination.arrivalDate) - \(destination.departureDate)")
                 .font(.caption)
                 .foregroundColor(.secondary)
+            
+            if let overview = destination.overview, !overview.isEmpty {
+                Text(overview)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(2)
+            }
             
             // Quick stats
             HStack(spacing: 16) {

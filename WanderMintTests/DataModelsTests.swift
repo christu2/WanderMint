@@ -275,4 +275,146 @@ final class DataModelsTests: XCTestCase {
             XCTFail("Expected networkError with message")
         }
     }
+    
+    func testAdminDestinationBasedRecommendationRichDecoding() throws {
+        let json = """
+        {
+          "id": "rec-1",
+          "tripOverview": "Paris & London Points Itinerary",
+          "costNotes": "Transfer 50k Chase UR to Air France Flying Blue and 90k Chase UR to Hyatt.",
+          "destinations": [
+            {
+              "id": "dest-1",
+              "cityName": "Paris",
+              "arrivalDate": "2026-05-12",
+              "departureDate": "2026-05-14",
+              "numberOfNights": 2,
+              "overview": "Romantic stay near Place Vendôme.",
+              "accommodationOptions": [
+                {
+                  "id": "acc-1",
+                  "priority": 1,
+                  "bookingInstructions": "Transfer 90k Chase UR to World of Hyatt.",
+                  "hotel": {
+                    "name": "Park Hyatt Paris-Vendôme",
+                    "rating": 5.0,
+                    "pricePerNight": 0,
+                    "pointsPerNight": 45000,
+                    "loyaltyProgram": "World of Hyatt",
+                    "location": "5 Rue de la Paix, Paris",
+                    "bookingUrl": "https://www.hyatt.com",
+                    "detailedDescription": "Palace hotel in central Paris.",
+                    "amenities": ["Spa", "Breakfast"]
+                  }
+                }
+              ],
+              "recommendedActivities": [
+                {
+                  "id": "act-1",
+                  "name": "Louvre Evening Tour",
+                  "description": "Guided tour",
+                  "location": { "name": "Louvre", "address": "Rue de Rivoli" },
+                  "estimatedCost": { "cashAmount": 65 },
+                  "estimatedDuration": "3h",
+                  "category": "Culture",
+                  "priority": 1,
+                  "bestTimeToVisit": "Friday evening",
+                  "bookingRequired": true,
+                  "bookingInstructions": "Book 60 days ahead",
+                  "tips": "Use Carrousel entrance"
+                }
+              ],
+              "recommendedRestaurants": [
+                {
+                  "id": "rest-1",
+                  "name": "Le Comptoir",
+                  "cuisine": "French",
+                  "mealType": "Dinner",
+                  "location": { "name": "Saint-Germain", "address": "9 Carrefour de l'Odéon" },
+                  "priceRange": "$$$",
+                  "estimatedCost": { "cashAmount": 120 },
+                  "description": "Classic bistro",
+                  "reservationRequired": false,
+                  "specialties": "Duck confit",
+                  "tips": "Arrive by 6:45pm"
+                }
+              ]
+            }
+          ],
+          "logistics": {
+            "transportSegments": [
+              {
+                "id": "seg-1",
+                "fromCity": "New York",
+                "toCity": "Paris",
+                "departureDate": "2026-05-11",
+                "transportOptions": [
+                  {
+                    "id": "opt-1",
+                    "transportType": "flight",
+                    "priority": 1,
+                    "duration": "7h 15m",
+                    "bookingUrl": "https://www.airfrance.us",
+                    "notes": "Business Class award",
+                    "cost": {
+                      "paymentType": "hybrid",
+                      "cashAmount": 210,
+                      "totalCashValue": 210,
+                      "pointsAmount": 50000,
+                      "pointsProgram": "Air France Flying Blue"
+                    },
+                    "details": {
+                      "flightNumber": "AF 11",
+                      "airline": "Air France",
+                      "departureAirportName": "JFK International",
+                      "arrivalAirportName": "Charles de Gaulle",
+                      "class": "Business",
+                      "aircraft": "B777-300ER",
+                      "details": {
+                        "departure": { "airportCode": "JFK", "time": "19:30", "date": "2026-05-11" },
+                        "arrival": { "airportCode": "CDG", "time": "08:45", "date": "2026-05-12" },
+                        "route": "JFK → CDG",
+                        "showDateChange": "+1 day"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "bookingDeadlines": [],
+            "generalInstructions": "Transfer points after verifying award space."
+          },
+          "totalCost": {
+            "totalEstimate": 395,
+            "flights": 210,
+            "accommodation": 0,
+            "activities": 65,
+            "food": 120,
+            "localTransport": 0,
+            "miscellaneous": 0,
+            "currency": "USD",
+            "pointsUsed": {
+              "Air France Flying Blue": 50000,
+              "World of Hyatt": 90000
+            }
+          },
+          "_schemaVersion": "2.1.0"
+        }
+        """.data(using: .utf8)!
+        
+        let decoded = try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: json)
+        XCTAssertEqual(decoded.costNotes, "Transfer 50k Chase UR to Air France Flying Blue and 90k Chase UR to Hyatt.")
+        XCTAssertEqual(decoded.destinations.first?.overview, "Romantic stay near Place Vendôme.")
+        XCTAssertEqual(decoded.destinations.first?.accommodationOptions.first?.effectiveBookingInstructions, "Transfer 90k Chase UR to World of Hyatt.")
+        XCTAssertEqual(decoded.destinations.first?.recommendedActivities.first?.tips, "Use Carrousel entrance")
+        XCTAssertEqual(decoded.destinations.first?.recommendedActivities.first?.bestTimeToVisit, "Friday evening")
+        XCTAssertEqual(decoded.destinations.first?.recommendedRestaurants.first?.mealType, "Dinner")
+        XCTAssertEqual(decoded.destinations.first?.recommendedRestaurants.first?.specialties, "Duck confit")
+        let flightOpt = decoded.logistics.transportSegments.first?.transportOptions.first
+        XCTAssertEqual(flightOpt?.details.details.departure.airportCode, "JFK")
+        XCTAssertEqual(flightOpt?.details.details.arrival.airportCode, "CDG")
+        XCTAssertTrue(flightOpt?.details.details.showDateChange ?? false)
+        XCTAssertEqual(flightOpt?.details.details.dateChangeText, "+1 day")
+        XCTAssertEqual(decoded.totalCost.pointsUsed?["World of Hyatt"], 90000)
+    }
 }

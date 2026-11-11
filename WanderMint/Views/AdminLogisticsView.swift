@@ -767,6 +767,8 @@ struct AdminTransportOptionView: View {
                         .buttonStyle(PlainButtonStyle())
                     }
                 }
+            } else {
+                AdminNonFlightDetailsView(transportType: option.transportType, details: option.details)
             }
             
             // Notes section
@@ -779,11 +781,11 @@ struct AdminTransportOptionView: View {
             
             // Action buttons
             HStack {
-                if !option.bookingUrl.isEmpty, let url = URL(string: option.bookingUrl) {
+                if !option.bookingUrl.isEmpty, let url = URL(string: option.bookingUrl.hasPrefix("http") ? option.bookingUrl : "https://\(option.bookingUrl)") {
                     Link(destination: url) {
                         HStack {
                             Image(systemName: "globe")
-                            Text(option.isRoundTrip == true ? "Book Round Trip" : "Book Flight")
+                            Text(option.isRoundTrip == true ? "Book Round Trip" : "Book \(option.transportType.capitalized)")
                         }
                         .font(.subheadline)
                         .foregroundColor(.blue)
@@ -945,9 +947,17 @@ struct AdminFlightDetailsView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    Text("\(flightDetails.details.arrival.time)")
-                        .font(.subheadline)
-                        .bold()
+                    HStack(spacing: 4) {
+                        Text("\(flightDetails.details.arrival.time)")
+                            .font(.subheadline)
+                            .bold()
+                        if let dateChange = flightDetails.details.dateChangeText, !dateChange.isEmpty {
+                            Text(dateChange)
+                                .font(.caption2)
+                                .bold()
+                                .foregroundColor(.orange)
+                        }
+                    }
                     
                     Text(flightDetails.details.arrival.airportCode)
                         .font(.caption)
@@ -965,6 +975,76 @@ struct AdminFlightDetailsView: View {
         .padding()
         .background(Color.blue.opacity(0.05))
         .cornerRadius(8)
+    }
+}
+
+struct AdminNonFlightDetailsView: View {
+    let transportType: String
+    let details: AdminFlightDetails
+    
+    var body: some View {
+        let provider = details.operatorName ?? details.company ?? details.airline
+        let depLoc = details.departureStation ?? details.departureTerminal ?? details.pickupLocation ?? details.departureAirportName
+        let arrLoc = details.arrivalStation ?? details.arrivalTerminal ?? details.dropoffLocation ?? details.arrivalAirportName
+        let depTime = details.departureTime ?? details.details.departure.time
+        let arrTime = details.arrivalTime ?? details.details.arrival.time
+        
+        if !provider.isEmpty || !depLoc.isEmpty || !arrLoc.isEmpty || !depTime.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    if !provider.isEmpty {
+                        Text([provider, details.trainNumber].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " "))
+                            .font(.subheadline)
+                            .bold()
+                    }
+                    Spacer()
+                    if !details.flightClass.isEmpty {
+                        Text(details.flightClass.capitalized)
+                            .font(.caption)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                }
+                
+                if !depLoc.isEmpty || !arrLoc.isEmpty || !depTime.isEmpty || !arrTime.isEmpty {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            if !depLoc.isEmpty {
+                                Text(depLoc)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            if !depTime.isEmpty {
+                                Text(depTime)
+                                    .font(.subheadline)
+                                    .bold()
+                            }
+                        }
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                            .foregroundColor(.gray)
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            if !arrLoc.isEmpty {
+                                Text(arrLoc)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            if !arrTime.isEmpty {
+                                Text(arrTime)
+                                    .font(.subheadline)
+                                    .bold()
+                            }
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(Color.blue.opacity(0.05))
+            .cornerRadius(8)
+        }
     }
 }
 

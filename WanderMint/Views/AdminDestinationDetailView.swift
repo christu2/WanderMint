@@ -27,6 +27,19 @@ struct AdminDestinationDetailView: View {
                         .background(Color.blue.opacity(0.1))
                         .cornerRadius(6)
                 }
+                
+                if let altDates = destination.alternativeDates, !altDates.isEmpty {
+                    Text("Alternative dates: \(altDates)")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                
+                if let overview = destination.overview, !overview.isEmpty {
+                    Text(overview)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
             }
             .padding()
             .background(Color(UIColor.systemGray6))
@@ -177,6 +190,31 @@ struct AdminHotelCardView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Photo Header (if available)
+            if let photoUrl = accommodation.hotel.photoUrl ?? accommodation.hotel.photos?.first, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(height: 140)
+                            .clipped()
+                            .cornerRadius(8)
+                    case .failure:
+                        EmptyView()
+                    case .empty:
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.15))
+                            .frame(height: 140)
+                            .cornerRadius(8)
+                            .overlay(ProgressView())
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            }
+
             // Hotel header with selection
             HStack {
                 if showSelection {
@@ -237,9 +275,7 @@ struct AdminHotelCardView: View {
                             .foregroundColor(.secondary)
                     }
                     
-                    Text(accommodation.hotel.location)
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
+                    LocationMapButton(location: accommodation.hotel.location, name: accommodation.hotel.name)
                 }
                 
                 Spacer()
@@ -268,42 +304,48 @@ struct AdminHotelCardView: View {
                 Text(accommodation.hotel.detailedDescription)
                     .font(.body)
                     .foregroundColor(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .multilineTextAlignment(.leading)
             }
             
-            // Action buttons
-            HStack {
-                // View details button
-                Button(action: {
-                    showingHotelDetails = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "info.circle.fill")
-                        Text("View Hotel Details")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.blue.opacity(0.1))
-                    .cornerRadius(6)
+            // Booking / Points Instructions
+            if let instructions = accommodation.effectiveBookingInstructions {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "sparkles")
+                        .font(.caption)
+                        .foregroundColor(.purple)
+                        .padding(.top, 2)
+                    Text(instructions)
+                        .font(.caption)
+                        .foregroundColor(.purple)
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.purple.opacity(0.08))
+                .cornerRadius(6)
+            }
+            
+            // Action buttons
+            HStack(spacing: 8) {
+                // View details button
+                ActionLinkButton(title: "Details", icon: "info.circle.fill", color: .blue) {
+                    showingHotelDetails = true
+                }
+                
+                // TripAdvisor button
+                if let tripadvisorUrl = accommodation.hotel.tripadvisorUrl, !tripadvisorUrl.isEmpty {
+                    ActionLinkButton(title: "TripAdvisor", icon: "star.bubble.fill", color: .teal) {
+                        MapLauncher.openTripAdvisor(for: accommodation.hotel.name, location: accommodation.hotel.location, directUrl: tripadvisorUrl)
+                    }
+                }
                 
                 // Book hotel button
                 if !accommodation.hotel.bookingUrl.isEmpty {
-                    Link(destination: URL(string: accommodation.hotel.bookingUrl)!) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "globe")
-                            Text("Book Hotel")
+                    ActionLinkButton(title: "Book", icon: "globe", color: .indigo) {
+                        let urlStr = accommodation.hotel.bookingUrl.hasPrefix("http") ? accommodation.hotel.bookingUrl : "https://\(accommodation.hotel.bookingUrl)"
+                        if let url = URL(string: urlStr) {
+                            UIApplication.shared.open(url)
                         }
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(6)
                     }
                 }
                 
@@ -364,34 +406,119 @@ struct AdminActivityCardView: View {
                         .font(.subheadline)
                         .bold()
                     
-                    Text(activity.category)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(4)
+                    HStack(spacing: 6) {
+                        if !activity.category.isEmpty {
+                            Text(activity.category)
+                                .font(.caption)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.1))
+                                .cornerRadius(4)
+                        }
+                        
+                        if let priority = activity.priority, priority == 1 {
+                            Text("Must-Do")
+                                .font(.caption2)
+                                .bold()
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green.opacity(0.15))
+                                .foregroundColor(.green)
+                                .cornerRadius(4)
+                        }
+                        
+                        if activity.bookingRequired == true {
+                            Text("Booking Required")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.15))
+                                .foregroundColor(.orange)
+                                .cornerRadius(4)
+                        }
+                    }
                 }
                 
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text("$\(Int(activity.estimatedCost))")
-                        .font(.subheadline)
-                        .bold()
+                    if activity.estimatedCost > 0 {
+                        Text("$\(Int(activity.estimatedCost))")
+                            .font(.subheadline)
+                            .bold()
+                    } else {
+                        Text("Free / Included")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                     
-                    Text(activity.estimatedDuration)
+                    if !activity.estimatedDuration.isEmpty {
+                        Text(activity.estimatedDuration)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            
+            if !activity.description.isEmpty {
+                Text(activity.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
+            
+            if let bestTime = activity.bestTimeToVisit, !bestTime.isEmpty {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                    Text("Best time: \(bestTime)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
             
-            Text(activity.description)
-                .font(.body)
-                .foregroundColor(.secondary)
+            if let bookingInstructions = activity.bookingInstructions, !bookingInstructions.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "ticket.fill")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text(bookingInstructions)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
             
-            Text(activity.location)
-                .font(.caption)
-                .foregroundColor(.blue)
+            if let tips = activity.tips, !tips.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.caption)
+                        .foregroundColor(.yellow)
+                    Text("Tip: \(tips)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if !activity.location.isEmpty {
+                LocationMapButton(location: activity.location, name: activity.name)
+            }
+            
+            // Action links row
+            HStack(spacing: 8) {
+                if let websiteUrl = activity.website ?? activity.bookingUrl, !websiteUrl.isEmpty {
+                    ActionLinkButton(title: "Website", icon: "safari.fill", color: .blue) {
+                        let urlStr = websiteUrl.hasPrefix("http") ? websiteUrl : "https://\(websiteUrl)"
+                        if let url = URL(string: urlStr) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+                
+                ActionLinkButton(title: "TripAdvisor", icon: "star.bubble.fill", color: .teal) {
+                    MapLauncher.openTripAdvisor(for: activity.name, location: activity.location, directUrl: activity.tripadvisorUrl)
+                }
+            }
+            .padding(.top, 2)
         }
         .padding()
         .background(Color(UIColor.systemGray6))
@@ -425,29 +552,123 @@ struct AdminRestaurantCardView: View {
                         .font(.subheadline)
                         .bold()
                     
-                    Text(restaurant.cuisine)
-                        .font(.caption)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.1))
-                        .cornerRadius(4)
+                    HStack(spacing: 6) {
+                        if !restaurant.cuisine.isEmpty {
+                            Text(restaurant.cuisine)
+                                .font(.caption)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.1))
+                                .cornerRadius(4)
+                        }
+                        
+                        if let mealType = restaurant.mealType, !mealType.isEmpty {
+                            Text(mealType)
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.purple.opacity(0.12))
+                                .foregroundColor(.purple)
+                                .cornerRadius(4)
+                        }
+                        
+                        if restaurant.reservationRequired == true {
+                            Text("Reserve Ahead")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red.opacity(0.12))
+                                .foregroundColor(.red)
+                                .cornerRadius(4)
+                        }
+                    }
                 }
                 
                 Spacer()
                 
-                Text(restaurant.priceRange)
-                    .font(.subheadline)
-                    .bold()
-                    .foregroundColor(.green)
+                VStack(alignment: .trailing, spacing: 2) {
+                    if !restaurant.priceRange.isEmpty {
+                        Text(restaurant.priceRange)
+                            .font(.subheadline)
+                            .bold()
+                            .foregroundColor(.green)
+                    }
+                    if let cost = restaurant.estimatedCost, cost > 0 {
+                        Text("~$\(Int(cost))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
             }
             
-            Text(restaurant.description)
-                .font(.body)
-                .foregroundColor(.secondary)
+            if !restaurant.description.isEmpty {
+                Text(restaurant.description)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+            }
             
-            Text(restaurant.location)
-                .font(.caption)
-                .foregroundColor(.blue)
+            if let specialties = restaurant.specialties, !specialties.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "star.fill")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text("Must try: \(specialties)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if let resInst = restaurant.reservationInstructions, !resInst.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Text(resInst)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if let tips = restaurant.tips, !tips.isEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.caption)
+                        .foregroundColor(.yellow)
+                    Text("Tip: \(tips)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            if !restaurant.location.isEmpty {
+                LocationMapButton(location: restaurant.location, name: restaurant.name)
+            }
+            
+            // Action links row
+            HStack(spacing: 8) {
+                ActionLinkButton(title: "Yelp", icon: "bubble.left.and.bubble.right.fill", color: .red) {
+                    MapLauncher.openYelp(for: restaurant.name, location: restaurant.location, directUrl: restaurant.yelpUrl)
+                }
+                
+                if let websiteUrl = restaurant.website, !websiteUrl.isEmpty {
+                    ActionLinkButton(title: "Website", icon: "safari.fill", color: .blue) {
+                        let urlStr = websiteUrl.hasPrefix("http") ? websiteUrl : "https://\(websiteUrl)"
+                        if let url = URL(string: urlStr) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+                
+                if let resUrl = restaurant.reservationUrl, !resUrl.isEmpty {
+                    ActionLinkButton(title: "Reserve", icon: "calendar", color: .green) {
+                        let urlStr = resUrl.hasPrefix("http") ? resUrl : "https://\(resUrl)"
+                        if let url = URL(string: urlStr) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }
+            }
+            .padding(.top, 2)
         }
         .padding()
         .background(Color(UIColor.systemGray6))
@@ -466,6 +687,31 @@ struct HotelDetailModal: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // Hotel Photo Header (if available)
+                    if let photoUrl = hotel.photoUrl ?? hotel.photos?.first, !photoUrl.isEmpty, let url = URL(string: photoUrl) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(maxHeight: 220)
+                                    .clipped()
+                                    .cornerRadius(12)
+                            case .failure:
+                                EmptyView()
+                            case .empty:
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(height: 180)
+                                    .cornerRadius(12)
+                                    .overlay(ProgressView())
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    }
+                    
                     // Hotel Header
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
@@ -478,9 +724,7 @@ struct HotelDetailModal: View {
                                     .font(.title2)
                                     .bold()
                                 
-                                Text(hotel.location)
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                LocationMapButton(location: hotel.location, name: hotel.name)
                             }
                             
                             Spacer()
@@ -567,7 +811,7 @@ struct HotelDetailModal: View {
                     .cornerRadius(12)
                     
                     // Loyalty Program Info
-                    if let program = hotel.loyaltyProgram {
+                    if let program = hotel.loyaltyProgram, !program.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Loyalty Program")
                                 .font(.headline)
@@ -590,35 +834,74 @@ struct HotelDetailModal: View {
                         .cornerRadius(12)
                     }
                     
-                    // TripAdvisor Integration
-                    if let tripadvisorUrl = hotel.tripadvisorUrl, !tripadvisorUrl.isEmpty {
+                    // Booking & Points Strategy Instructions
+                    if let instructions = option.effectiveBookingInstructions {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Reviews & Info")
-                                .font(.headline)
-                            
-                            Button(action: {
-                                if let url = URL(string: tripadvisorUrl) {
-                                    UIApplication.shared.open(url)
-                                }
-                            }) {
-                                HStack {
-                                    Image(systemName: "star.bubble")
-                                    Text("View on TripAdvisor")
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.blue)
+                            HStack(spacing: 6) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.purple)
+                                Text("Booking & Points Instructions")
+                                    .font(.headline)
                             }
+                            Text(instructions)
+                                .font(.body)
+                                .foregroundColor(.secondary)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .background(Color.orange.opacity(0.05))
+                        .background(Color.purple.opacity(0.08))
                         .cornerRadius(12)
                     }
+                    
+                    // Amenities & Cancellation Policy
+                    if let amenities = hotel.amenities, !amenities.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Amenities")
+                                .font(.headline)
+                            Text(amenities.joined(separator: " • "))
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                    
+                    if let policy = hotel.cancellationPolicy, !policy.isEmpty {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Cancellation Policy")
+                                .font(.subheadline)
+                                .bold()
+                            Text(policy)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .background(Color.gray.opacity(0.05))
+                        .cornerRadius(12)
+                    }
+                    
+                    // TripAdvisor Reviews
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Reviews & Ratings")
+                            .font(.headline)
+                        
+                        ActionLinkButton(title: "View on TripAdvisor", icon: "star.bubble.fill", color: .teal) {
+                            MapLauncher.openTripAdvisor(for: hotel.name, location: hotel.location, directUrl: hotel.tripadvisorUrl)
+                        }
+                    }
+                    .padding()
+                    .background(Color.orange.opacity(0.05))
+                    .cornerRadius(12)
                     
                     // Booking Section
                     if !hotel.bookingUrl.isEmpty {
                         VStack(spacing: 12) {
                             Button(action: {
-                                if let url = URL(string: hotel.bookingUrl.hasPrefix("http") ? hotel.bookingUrl : "https://\(hotel.bookingUrl)") {
+                                let urlStr = hotel.bookingUrl.hasPrefix("http") ? hotel.bookingUrl : "https://\(hotel.bookingUrl)"
+                                if let url = URL(string: urlStr) {
                                     UIApplication.shared.open(url)
                                 }
                             }) {

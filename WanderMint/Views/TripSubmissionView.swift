@@ -54,6 +54,8 @@ struct TripSubmissionView: View {
     @State private var budget: Budget? = nil
     @State private var travelStyle: TravelStyle? = nil // Explicitly empty - no default selection
     @State private var groupSize = 1
+    @State private var petFriendly = false
+    @State private var optInEmailNotifications = true
     @State private var specialRequests = ""
     @State private var selectedInterests: Set<String> = []
 
@@ -336,6 +338,50 @@ struct TripSubmissionView: View {
                     .accessibilityLabel("Travel style: \(travelStyle?.displayName ?? "Not selected")")
                     .accessibilityHint("Select your travel pace and type preference")
                 }
+                
+                // Pet-Friendly Option
+                Toggle(isOn: $petFriendly) {
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        Image(systemName: "pawprint.fill")
+                            .foregroundColor(.purple)
+                            .font(.system(size: 16))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Pet-Friendly Options")
+                                .font(AppTheme.Typography.body)
+                                .foregroundColor(AppTheme.Colors.textPrimary)
+                            Text("Curate pet-welcoming accommodations and outdoor venues")
+                                .font(AppTheme.Typography.caption)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
+                        }
+                    }
+                }
+                .tint(.purple)
+                .padding(AppTheme.Spacing.md)
+                .background(Color.white)
+                .cornerRadius(AppTheme.CornerRadius.md)
+                .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
+
+                // Email Notification Option
+                Toggle(isOn: $optInEmailNotifications) {
+                    HStack(spacing: AppTheme.Spacing.sm) {
+                        Image(systemName: "envelope.fill")
+                            .foregroundColor(AppTheme.Colors.primary)
+                            .font(.system(size: 16))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Email Notifications")
+                                .font(AppTheme.Typography.body)
+                                .foregroundColor(AppTheme.Colors.textPrimary)
+                            Text("Email me when my personalized itinerary is ready")
+                                .font(AppTheme.Typography.caption)
+                                .foregroundColor(AppTheme.Colors.textSecondary)
+                        }
+                    }
+                }
+                .tint(AppTheme.Colors.primary)
+                .padding(AppTheme.Spacing.md)
+                .background(Color.white)
+                .cornerRadius(AppTheme.CornerRadius.md)
+                .applyShadow(Shadow(color: AppTheme.Shadows.light, radius: 2, x: 0, y: 1))
             }
         }
     }
@@ -563,6 +609,8 @@ struct TripSubmissionView: View {
             budget: budgetValue,
             travelStyle: travelStyle?.rawValue ?? "",
             groupSize: groupSize,
+            petFriendly: petFriendly,
+            optInEmailNotifications: optInEmailNotifications,
             specialRequests: sanitizedSpecialRequests,
             interests: Array(selectedInterests),
             flightClass: nil
@@ -589,6 +637,8 @@ struct TripSubmissionView: View {
         budget = nil
         travelStyle = nil
         groupSize = 1
+        petFriendly = false
+        optInEmailNotifications = true
         specialRequests = ""
         selectedInterests = []
         earliestStartDate = Date()
@@ -624,10 +674,10 @@ struct TripSubmissionView: View {
         let draftData: [String: Any] = [
             "destinations": destinations,
             "departureLocation": departureLocation,
-            "budget": budget,
+            "budget": budget?.rawValue ?? "",
             "specialRequests": specialRequests,
             "groupSize": groupSize,
-            "travelStyle": travelStyle
+            "travelStyle": travelStyle?.rawValue ?? ""
         ]
         
         UserDefaults.standard.set(draftData, forKey: "trip_draft")

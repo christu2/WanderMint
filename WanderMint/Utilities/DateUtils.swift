@@ -57,15 +57,24 @@ struct DateUtils {
     
     /// Converts a date-only string (YYYY-MM-DD) to a Date at midnight local time
     static func fromDateOnlyString(_ dateString: String) -> Date? {
-        // Parse as UTC first to avoid timezone shifts
-        guard let utcDate = dateOnlyFormatter.date(from: dateString) else {
+        guard dateString.range(of: #"^\d{4}-\d{2}-\d{2}$"#, options: .regularExpression) != nil,
+              let utcDate = dateOnlyFormatter.date(from: dateString) else {
+            return nil
+        }
+        
+        // Extract year/month/day in UTC so western timezones don't shift back 1 day
+        var utcCalendar = Calendar(identifier: .gregorian)
+        utcCalendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let components = utcCalendar.dateComponents([.year, .month, .day], from: utcDate)
+        
+        // Verify components round-trip to the exact input string (rejects e.g. 2024-02-31)
+        guard let y = components.year, let m = components.month, let d = components.day,
+              Self.dateString(year: y, month: m, day: d) == dateString else {
             return nil
         }
         
         // Convert to local midnight to maintain the same calendar date
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.year, .month, .day], from: utcDate)
-        return calendar.date(from: components)
+        return Calendar.current.date(from: components)
     }
     
     /// Creates a date-only string from Date components

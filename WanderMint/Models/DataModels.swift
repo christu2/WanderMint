@@ -16,13 +16,47 @@ struct EnhancedTripSubmission: Codable {
     let budget: String?
     let travelStyle: String
     let groupSize: Int
+    var petFriendly: Bool? = nil     // Pet friendly preference
+    var optInEmailNotifications: Bool? = nil // Email notification preference
     let specialRequests: String
     let interests: [String]
     let flightClass: String?   // New field for flight preference
     
+    init(
+        destinations: [String],
+        departureLocation: String,
+        startDate: String,
+        endDate: String,
+        flexibleDates: Bool,
+        tripDuration: Int? = nil,
+        budget: String? = nil,
+        travelStyle: String,
+        groupSize: Int,
+        petFriendly: Bool? = nil,
+        optInEmailNotifications: Bool? = nil,
+        specialRequests: String,
+        interests: [String],
+        flightClass: String? = nil
+    ) {
+        self.destinations = destinations
+        self.departureLocation = departureLocation
+        self.startDate = startDate
+        self.endDate = endDate
+        self.flexibleDates = flexibleDates
+        self.tripDuration = tripDuration
+        self.budget = budget
+        self.travelStyle = travelStyle
+        self.groupSize = groupSize
+        self.petFriendly = petFriendly
+        self.optInEmailNotifications = optInEmailNotifications
+        self.specialRequests = specialRequests
+        self.interests = interests
+        self.flightClass = flightClass
+    }
+    
     enum CodingKeys: String, CodingKey {
         case destinations, departureLocation, startDate, endDate, flexibleDates, tripDuration
-        case budget, travelStyle, groupSize, specialRequests, interests, flightClass
+        case budget, travelStyle, groupSize, petFriendly, optInEmailNotifications, specialRequests, interests, flightClass
     }
 }
 
@@ -133,11 +167,58 @@ struct TravelTrip: Identifiable, Codable {
     let budget: String?
     let travelStyle: String?
     let groupSize: Int?
+    var petFriendly: Bool? = nil
     let interests: [String]?
     let specialRequests: String?
     
+    init(
+        id: String,
+        userId: String,
+        destination: String? = nil,
+        destinations: [String]? = nil,
+        departureLocation: String? = nil,
+        startDate: AppTimestamp,
+        endDate: AppTimestamp,
+        paymentMethod: String? = nil,
+        flexibleDates: Bool,
+        status: TripStatusType,
+        createdAt: AppTimestamp,
+        updatedAt: AppTimestamp? = nil,
+        recommendation: Recommendation? = nil,
+        destinationRecommendation: AdminDestinationBasedRecommendation? = nil,
+        flightClass: String? = nil,
+        budget: String? = nil,
+        travelStyle: String? = nil,
+        groupSize: Int? = nil,
+        petFriendly: Bool? = nil,
+        interests: [String]? = nil,
+        specialRequests: String? = nil
+    ) {
+        self.id = id
+        self.userId = userId
+        self.destination = destination
+        self.destinations = destinations
+        self.departureLocation = departureLocation
+        self.startDate = startDate
+        self.endDate = endDate
+        self.paymentMethod = paymentMethod
+        self.flexibleDates = flexibleDates
+        self.status = status
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.recommendation = recommendation
+        self.destinationRecommendation = destinationRecommendation
+        self.flightClass = flightClass
+        self.budget = budget
+        self.travelStyle = travelStyle
+        self.groupSize = groupSize
+        self.petFriendly = petFriendly
+        self.interests = interests
+        self.specialRequests = specialRequests
+    }
+    
     enum CodingKeys: String, CodingKey {
-        case id, userId, destination, destinations, departureLocation, startDate, endDate, paymentMethod, flexibleDates, status, createdAt, updatedAt, recommendation, destinationRecommendation, flightClass, budget, travelStyle, groupSize, interests, specialRequests
+        case id, userId, destination, destinations, departureLocation, startDate, endDate, paymentMethod, flexibleDates, status, createdAt, updatedAt, recommendation, destinationRecommendation, flightClass, budget, travelStyle, groupSize, petFriendly, interests, specialRequests
     }
     
     // Computed properties for easier date handling
