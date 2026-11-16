@@ -281,16 +281,33 @@ struct AdminHotelCardView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text("$\(Int(accommodation.hotel.pricePerNight))/night")
-                        .font(.headline)
-                        .bold()
-                        .foregroundColor(isSelected ? .green : .primary)
-                    
-                    if let points = accommodation.hotel.pointsPerNight, points > 0,
-                       let program = accommodation.hotel.loyaltyProgram {
-                        Text("\(points) \(program) pts")
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                    if accommodation.hotel.pricePerNight > 0 {
+                        Text("$\(Int(accommodation.hotel.pricePerNight))/night")
+                            .font(.headline)
+                            .bold()
+                            .foregroundColor(isSelected ? .green : .primary)
+                        
+                        if let points = accommodation.hotel.pointsPerNight, points > 0 {
+                            let prog = (accommodation.hotel.loyaltyProgram ?? "").isEmpty ? "Points" : accommodation.hotel.loyaltyProgram!
+                            Text("\(points.formatted()) \(prog) pts")
+                                .font(.caption)
+                                .foregroundColor(.blue)
+                        }
+                    } else if let points = accommodation.hotel.pointsPerNight, points > 0 {
+                        Text("\(points.formatted()) pts/night")
+                            .font(.headline)
+                            .bold()
+                            .foregroundColor(isSelected ? .green : .blue)
+                        
+                        if let program = accommodation.hotel.loyaltyProgram, !program.isEmpty {
+                            Text(program)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    } else {
+                        Text("Rate TBD")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                     
                     Text("Priority \(accommodation.priority)")
@@ -776,19 +793,21 @@ struct HotelDetailModal: View {
                             .font(.headline)
                         
                         VStack(spacing: 8) {
-                            HStack {
-                                Text("Price per Night")
-                                Spacer()
-                                Text("$\(Int(hotel.pricePerNight))")
-                                    .bold()
+                            if hotel.pricePerNight > 0 || (hotel.pointsPerNight ?? 0) == 0 {
+                                HStack {
+                                    Text("Price per Night")
+                                    Spacer()
+                                    Text("$\(Int(hotel.pricePerNight))")
+                                        .bold()
+                                }
                             }
                             
-                            if let points = hotel.pointsPerNight, points > 0,
-                               let program = hotel.loyaltyProgram {
+                            if let points = hotel.pointsPerNight, points > 0 {
+                                let program = (hotel.loyaltyProgram ?? "").isEmpty ? "Hotel" : hotel.loyaltyProgram!
                                 HStack {
                                     Text("\(program) Points per Night")
                                     Spacer()
-                                    Text("\(points) pts")
+                                    Text("\(points.formatted()) pts")
                                         .bold()
                                         .foregroundColor(.blue)
                                 }
