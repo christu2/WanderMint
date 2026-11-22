@@ -17,6 +17,43 @@ class TripService: ObservableObject, TripServiceProtocol {
     #endif
     @Published var networkMonitor = NetworkMonitor()
     
+    // MARK: - Request Payload Builder (Contract-Safe)
+    /// Builds a JSON-serializable dictionary strictly matching `travel-backend-google/functions/schemas.js`
+    /// Omits optional fields when nil/empty so backend AJV enum and minLength validations never reject valid submissions.
+    nonisolated static func buildEnhancedTripPayload(_ submission: EnhancedTripSubmission) -> [String: Any] {
+        var requestData: [String: Any] = [
+            "destinations": submission.destinations,
+            "startDate": submission.startDate,
+            "endDate": submission.endDate,
+            "flexibleDates": submission.flexibleDates,
+            "travelStyle": submission.travelStyle,
+            "groupSize": submission.groupSize,
+            "petFriendly": submission.petFriendly ?? false,
+            "optInEmailNotifications": submission.optInEmailNotifications ?? true,
+            "specialRequests": submission.specialRequests,
+            "interests": submission.interests
+        ]
+        
+        let trimmedDeparture = submission.departureLocation.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedDeparture.isEmpty {
+            requestData["departureLocation"] = trimmedDeparture
+        }
+        
+        if let budget = submission.budget?.trimmingCharacters(in: .whitespacesAndNewlines), !budget.isEmpty {
+            requestData["budget"] = budget
+        }
+        
+        if let flightClass = submission.flightClass?.trimmingCharacters(in: .whitespacesAndNewlines), !flightClass.isEmpty {
+            requestData["flightClass"] = flightClass
+        }
+        
+        if let duration = submission.tripDuration {
+            requestData["tripDuration"] = duration
+        }
+        
+        return requestData
+    }
+    
     // MARK: - Submit Enhanced Trip
     func submitEnhancedTrip(_ submission: EnhancedTripSubmission) async throws {
         // Check network connectivity
@@ -38,29 +75,7 @@ class TripService: ObservableObject, TripServiceProtocol {
         }
         
         // Prepare request data with enhanced structure
-        var requestData: [String: Any] = [
-            "destinations": submission.destinations,
-            "departureLocation": submission.departureLocation,
-            "startDate": submission.startDate,
-            "endDate": submission.endDate,
-            "flexibleDates": submission.flexibleDates,
-            "budget": submission.budget ?? "",
-            "travelStyle": submission.travelStyle,
-            "groupSize": submission.groupSize,
-            "petFriendly": submission.petFriendly ?? false,
-            "optInEmailNotifications": submission.optInEmailNotifications ?? true,
-            "specialRequests": submission.specialRequests,
-            "interests": submission.interests
-        ]
-        
-        // Add optional fields
-        if let flightClass = submission.flightClass {
-            requestData["flightClass"] = flightClass
-        }
-        
-        if let duration = submission.tripDuration {
-            requestData["tripDuration"] = duration
-        }
+        let requestData = Self.buildEnhancedTripPayload(submission)
         
         
         // Use the configured Cloud Function URL

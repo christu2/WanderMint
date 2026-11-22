@@ -164,17 +164,18 @@ class TripDataParser {
             return double.isNaN || double.isInfinite ? 0.0 : double
         } else if let float = data as? Float {
             return float.isNaN || float.isInfinite ? 0.0 : Double(float)
+        } else if let number = data as? NSNumber {
+            let d = number.doubleValue
+            return d.isNaN || d.isInfinite ? 0.0 : number
         } else if data is NSNull {
             return NSNull()
-        } else if let stringValue = data as? String, stringValue.lowercased() == "nan" {
-            // Handle NaN that comes as string from Firestore
-            return 0.0
-        } else {
-            // Additional NaN detection for Firestore edge cases
-            let description = String(describing: data)
-            if description.lowercased().contains("nan") || description == "nan" {
+        } else if let stringValue = data as? String {
+            let trimmed = stringValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if trimmed == "nan" || trimmed == "inf" || trimmed == "infinity" || trimmed == "-infinity" {
                 return 0.0
             }
+            return stringValue
+        } else {
             return data
         }
     }

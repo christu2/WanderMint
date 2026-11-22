@@ -58,8 +58,8 @@ class PointsService: ObservableObject {
             let document = try await docRef.getDocument()
             
             if document.exists {
-                // Update existing document
-                let fieldPath = "\(type.rawValue)Points.\(provider)"
+                // Update existing document using canonical camelCase Firestore field name
+                let fieldPath = FieldPath([type.firestoreFieldName, provider])
                 try await docRef.updateData([
                     fieldPath: amount,
                     "lastUpdated": FieldValue.serverTimestamp()
@@ -74,8 +74,7 @@ class PointsService: ObservableObject {
                     "lastUpdated": FieldValue.serverTimestamp()
                 ]
                 
-                let fieldPath = "\(type.rawValue)Points"
-                pointsData[fieldPath] = [provider: amount]
+                pointsData[type.firestoreFieldName] = [provider: amount]
                 
                 try await docRef.setData(pointsData)
             }
@@ -94,7 +93,7 @@ class PointsService: ObservableObject {
         }
         
         let docRef = db.collection("userPoints").document(user.uid)
-        let fieldPath = "\(type.rawValue)Points.\(provider)"
+        let fieldPath = FieldPath([type.firestoreFieldName, provider])
         
         do {
             try await docRef.updateData([

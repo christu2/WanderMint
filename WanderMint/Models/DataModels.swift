@@ -94,6 +94,15 @@ enum PointsType: String, CaseIterable {
     case hotel = "hotel"
     case airline = "airline"
     
+    /// Exact Firestore document field name matching backend and travelAdmin (`creditCardPoints`, `hotelPoints`, `airlinePoints`)
+    var firestoreFieldName: String {
+        switch self {
+        case .creditCard: return "creditCardPoints"
+        case .hotel: return "hotelPoints"
+        case .airline: return "airlinePoints"
+        }
+    }
+    
     var displayName: String {
         switch self {
         case .creditCard: return "Credit Card"
