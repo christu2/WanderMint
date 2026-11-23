@@ -1141,7 +1141,7 @@ struct FlightDetailsSheet: View {
     @StateObject private var tripService = TripService()
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Flight Header
@@ -2392,7 +2392,7 @@ struct BookingConfirmationSheet: View {
     }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Text(displayTitle)
                     .font(.headline)
@@ -2438,7 +2438,7 @@ struct BookingConfirmationSheet: View {
 }
 
 #Preview {
-    NavigationView {
+    NavigationStack {
         TripDetailView(initialTrip: TravelTrip(
             id: "preview",
             userId: "user123",

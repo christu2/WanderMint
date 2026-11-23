@@ -8,7 +8,7 @@ struct PointsManagementView: View {
     @State private var availableProviders: [String] = []
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Background gradient
                 LinearGradient(

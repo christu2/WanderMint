@@ -61,7 +61,7 @@ struct ProfileView: View {
     @State private var showingHelpSupport = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Background gradient
                 LinearGradient(
@@ -407,7 +407,7 @@ struct EditProfileView: View {
         }
         .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         
-        return NavigationView {
+        return NavigationStack {
             VStack(spacing: AppTheme.Spacing.lg) {
                 nameSection
                 Spacer()
@@ -694,7 +694,7 @@ struct HelpSupportView: View {
     @State private var emailError: String?
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {

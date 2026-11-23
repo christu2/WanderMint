@@ -20,7 +20,7 @@ struct ProfileSetupView: View {
     @State private var selectedAirlines: Set<String> = []
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 AppTheme.Colors.backgroundPrimary
                     .ignoresSafeArea()

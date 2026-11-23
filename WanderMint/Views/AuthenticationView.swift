@@ -21,7 +21,7 @@ struct AuthenticationView: View {
     @State private var showingResetPassword = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 // Logo/Header
                 VStack(spacing: 10) {
@@ -166,7 +166,7 @@ struct ResetPasswordView: View {
     @State private var showingSuccessAlert = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 20) {
                 Text("Reset Password")
                     .font(.largeTitle)

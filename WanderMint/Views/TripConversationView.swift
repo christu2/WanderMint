@@ -11,7 +11,7 @@ struct TripConversationView: View {
     @State private var errorMessage: String?
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 0) {
                 // Header with trip info
                 tripHeaderView

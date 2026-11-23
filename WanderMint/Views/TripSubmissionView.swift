@@ -791,7 +791,7 @@ struct CustomDatePicker: View {
             .disabled(false) // Ensure date picker is always enabled
         }
         .sheet(isPresented: $showingDatePicker) {
-            NavigationView {
+            NavigationStack {
                 VStack {
                     DatePicker(
                         title,
