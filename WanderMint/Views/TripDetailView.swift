@@ -3,6 +3,7 @@ import SwiftUI
 struct TripDetailView: View {
     let initialTrip: TravelTrip
     @StateObject private var viewModel = TripDetailViewModel()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     private var trip: TravelTrip {
         return viewModel.trip ?? initialTrip
@@ -88,9 +89,11 @@ struct TripDetailView: View {
                 Spacer()
             }
             .padding()
+            .padding(.top, horizontalSizeClass == .regular ? 56 : 0)
         }
         .navigationTitle("Trip Details")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink(destination: TripConversationView(trip: trip)) {

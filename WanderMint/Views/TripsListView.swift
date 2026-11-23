@@ -14,7 +14,7 @@ struct TripsListView: View {
                 pendingTripId: notificationService.pendingTripId
             )
         }
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             viewModel.loadTrips()
         }
