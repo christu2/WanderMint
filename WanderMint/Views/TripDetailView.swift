@@ -4,6 +4,7 @@ struct TripDetailView: View {
     let initialTrip: TravelTrip
     @StateObject private var viewModel = TripDetailViewModel()
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @State private var showingConversation = false
     
     private var trip: TravelTrip {
         return viewModel.trip ?? initialTrip
@@ -96,7 +97,9 @@ struct TripDetailView: View {
         .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(destination: TripConversationView(trip: trip)) {
+                Button(action: {
+                    showingConversation = true
+                }) {
                     HStack(spacing: 4) {
                         Image(systemName: "message.circle.fill")
                         Text("Request Changes")
@@ -105,6 +108,9 @@ struct TripDetailView: View {
                     .foregroundColor(AppTheme.Colors.primary)
                 }
             }
+        }
+        .navigationDestination(isPresented: $showingConversation) {
+            TripConversationView(trip: trip)
         }
         .onAppear {
             viewModel.loadTripDetails(tripId: initialTrip.id, initialTrip: initialTrip)

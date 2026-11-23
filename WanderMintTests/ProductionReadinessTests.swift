@@ -1,4 +1,5 @@
 import XCTest
+import SwiftUI
 import FirebaseFirestore
 @testable import WanderMint
 
@@ -442,6 +443,96 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertNil(AppConfig.safeExternalURL(from: "not a url"))
         XCTAssertNil(AppConfig.safeExternalURL(from: ""))
         XCTAssertNil(AppConfig.safeExternalURL(from: nil))
+    }
+    
+    // MARK: - 5. Navigation & Screen Rendering Regression Tests (iPhone & iPad Safety)
+    
+    @MainActor
+    func testAllPrimaryScreensRenderInsideUIHostingControllerWithoutCrashing() {
+        let now = Timestamp(date: Date())
+        let start = Timestamp(date: Date().addingTimeInterval(86400 * 10))
+        let end = Timestamp(date: Date().addingTimeInterval(86400 * 14))
+        
+        let pendingTrip = TravelTrip(
+            id: "trip_pending_render",
+            userId: "user_render",
+            destination: "Madison, WI",
+            destinations: ["Madison, WI"],
+            departureLocation: "Chicago, IL",
+            startDate: start,
+            endDate: end,
+            paymentMethod: nil,
+            flexibleDates: false,
+            status: .pending,
+            createdAt: now,
+            updatedAt: now,
+            recommendation: nil,
+            destinationRecommendation: nil,
+            flightClass: nil,
+            budget: "Comfortable",
+            travelStyle: "Relaxation",
+            groupSize: 2,
+            interests: ["Food"],
+            specialRequests: nil
+        )
+        
+        let authVM = AuthenticationViewModel()
+        let notifService = NotificationService.shared
+        
+        let viewsToRender: [(String, AnyView)] = [
+            ("MainTabView", AnyView(MainTabView().environmentObject(authVM).environmentObject(notifService))),
+            ("TripsListView", AnyView(NavigationStack { TripsListView(selectedTab: .constant(1)).environmentObject(notifService) })),
+            ("TripDetailView_Pending", AnyView(NavigationStack { TripDetailView(initialTrip: pendingTrip) })),
+            ("TripConversationView_Pending", AnyView(NavigationStack { TripConversationView(trip: pendingTrip) })),
+            ("TripSubmissionView", AnyView(NavigationStack { TripSubmissionView(selectedTab: .constant(0)) })),
+            ("ProfileView", AnyView(ProfileView().environmentObject(authVM))),
+            ("TravelHistoryView", AnyView(TravelHistoryView())),
+            ("NotificationSettingsView", AnyView(NotificationSettingsView())),
+            ("PrivacySecurityView", AnyView(PrivacySecurityView().environmentObject(authVM))),
+            ("HelpSupportView", AnyView(HelpSupportView())),
+            ("PointsManagementView", AnyView(PointsManagementView())),
+            ("AuthenticationView", AnyView(AuthenticationView().environmentObject(authVM))),
+            ("ProfileSetupView", AnyView(ProfileSetupView().environmentObject(authVM)))
+        ]
+        
+        for (name, view) in viewsToRender {
+            let host = UIHostingController(rootView: view)
+            host.view.frame = CGRect(x: 0, y: 0, width: 393, height: 852)
+            host.view.setNeedsLayout()
+            host.view.layoutIfNeeded()
+            XCTAssertNotNil(host.view, "\(name) failed to render in UIHostingController")
+        }
+    }
+    
+    func testNoLegacyNavigationViewOrNestedConversationNavigationStack() throws {
+        // Locate WanderMint/Views relative to this test file so regression checks work on any machine
+        let testFileURL = URL(fileURLWithPath: #filePath)
+        let viewsDir = testFileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("WanderMint/Views")
+        
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: viewsDir.path) else {
+            return
+        }
+        
+        let files = try fileManager.contentsOfDirectory(at: viewsDir, includingPropertiesForKeys: nil)
+            .filter { $0.pathExtension == "swift" }
+        
+        for fileURL in files {
+            let content = try String(contentsOf: fileURL, encoding: .utf8)
+            XCTAssertFalse(
+                content.contains("NavigationView {"),
+                "\(fileURL.lastPathComponent) must use NavigationStack instead of legacy NavigationView (causes blank split view on iPad)"
+            )
+        }
+        
+        let convContent = try String(contentsOf: viewsDir.appendingPathComponent("TripConversationView.swift"), encoding: .utf8)
+        XCTAssertFalse(
+            convContent.contains("NavigationStack {"),
+            "TripConversationView is pushed inside TripDetailView's NavigationStack and must NOT nest another NavigationStack"
+        )
     }
     
     func testTripDataValidatorRejectsInvalidDateOrdering() {

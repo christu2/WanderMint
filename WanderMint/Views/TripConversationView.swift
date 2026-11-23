@@ -3,6 +3,7 @@ import SwiftUI
 struct TripConversationView: View {
     let trip: TravelTrip
     @StateObject private var conversationService = ConversationService()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var conversation: TripConversation?
     @State private var messages: [ConversationMessage] = []
     @State private var newMessageText = ""
@@ -11,40 +12,40 @@ struct TripConversationView: View {
     @State private var errorMessage: String?
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Header with trip info
-                tripHeaderView
+        VStack(spacing: 0) {
+            // Header with trip info
+            tripHeaderView
+            
+            if isLoading {
+                ProgressView("Loading conversation...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if conversation != nil {
+                // Messages list
+                messagesListView
                 
-                if isLoading {
-                    ProgressView("Loading conversation...")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if conversation != nil {
-                    // Messages list
-                    messagesListView
-                    
-                    // Message input
-                    messageInputView
-                } else {
-                    errorView
+                // Message input
+                messageInputView
+            } else {
+                errorView
+            }
+        }
+        .padding(.top, horizontalSizeClass == .regular ? 56 : 0)
+        .navigationTitle("Request Changes")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Templates") {
+                    showingTemplateSheet = true
                 }
             }
-            .navigationTitle("Request Changes")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Templates") {
-                        showingTemplateSheet = true
-                    }
-                }
-            }
-            .sheet(isPresented: $showingTemplateSheet) {
-                FeedbackTemplateSheet(
-                    conversation: conversation,
-                    conversationService: conversationService,
-                    onTemplateSent: loadMessages
-                )
-            }
+        }
+        .sheet(isPresented: $showingTemplateSheet) {
+            FeedbackTemplateSheet(
+                conversation: conversation,
+                conversationService: conversationService,
+                onTemplateSent: loadMessages
+            )
         }
         .task {
             await loadConversation()
