@@ -6,10 +6,10 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>WanderMint</string>
-	<key>CFBundleIconName</key>
-	<string>AppIcon</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
@@ -19,36 +19,52 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0</string>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.christus.WanderMint.deeplink</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>wandermint</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
-	<string>2</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.travel</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>WanderMint notifies you when your personalized travel itinerary is ready or updated and when you receive messages about your trip.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
-		<true/>
-		<key>UISceneConfigurations</key>
-		<dict>
-			<key>UIWindowSceneSessionRoleApplication</key>
-			<array>
-				<dict>
-					<key>UISceneConfigurationName</key>
-					<string>Default Configuration</string>
-					<key>UISceneDelegateClassName</key>
-					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
-				</dict>
-			</array>
-		</dict>
+		<false/>
 	</dict>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>UIFileSharingEnabled</key>
+	<false/>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
+	<key>UIStatusBarStyle</key>
+	<string>UIStatusBarStyleDefault</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
@@ -64,125 +80,7 @@
 	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
-	
-	<!-- Privacy Usage Descriptions -->
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>WanderMint sends you notifications when your trip itinerary is ready, when you receive messages about trip changes, and when your itinerary is updated. This helps you stay informed about your travel plans.</string>
-	
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>WanderMint uses your location to provide personalized travel recommendations and find nearby attractions, restaurants, and services for your destination.</string>
-	
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>WanderMint uses your location to provide personalized travel recommendations and find nearby attractions, restaurants, and services for your destination.</string>
-	
-	<key>NSCameraUsageDescription</key>
-	<string>WanderMint allows you to take photos to share travel experiences and attach images to your trip requests.</string>
-	
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>WanderMint allows you to select photos from your library to share travel experiences and attach images to your trip requests.</string>
-	
-	<key>NSContactsUsageDescription</key>
-	<string>WanderMint can access your contacts to help you share trip details with friends and family members who might be traveling with you.</string>
-	
-	<key>NSCalendarsUsageDescription</key>
-	<string>WanderMint can add your trip dates to your calendar to help you keep track of your travel schedule and important trip milestones.</string>
-	
-	<key>NSFaceIDUsageDescription</key>
-	<string>WanderMint uses Face ID to securely authenticate and protect your travel data and payment information.</string>
-	
-	<key>NSAppleMusicUsageDescription</key>
-	<string>WanderMint can suggest travel playlists and help you discover local music for your destination.</string>
-	
-	<!-- App Transport Security -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>firebaseapp.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<true/>
-			</dict>
-			<key>googleapis.com</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<false/>
-				<key>NSExceptionMinimumTLSVersion</key>
-				<string>TLSv1.2</string>
-				<key>NSExceptionRequiresForwardSecrecy</key>
-				<true/>
-			</dict>
-		</dict>
-	</dict>
-	
-	<!-- URL Schemes for Deep Linking -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.wandermint.deeplink</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>wandermint</string>
-			</array>
-		</dict>
-	</array>
-	
-	<!-- Background Modes for Notifications -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
-	
-	<!-- iTunes Store Metadata -->
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	
-	<!-- Minimum iOS Version -->
-	<key>MinimumOSVersion</key>
-	<string>16.0</string>
-	
-	<!-- Device Capabilities -->
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	
-	<!-- Supported Devices -->
-	<key>UIDeviceFamily</key>
-	<array>
-		<integer>1</integer>
-		<integer>2</integer>
-	</array>
-	
-	<!-- App Category -->
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.travel</string>
-	
-	<!-- Status Bar Style -->
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleDefault</string>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	
-	<!-- Accessibility -->
-	<key>UIAccessibilityEnabled</key>
-	<true/>
-	
-	<!-- File Sharing -->
-	<key>UIFileSharingEnabled</key>
-	<false/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<false/>
-	
-	<!-- Launch Storyboard -->
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
 </dict>
 </plist>

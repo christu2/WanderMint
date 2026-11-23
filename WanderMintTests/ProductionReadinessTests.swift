@@ -390,6 +390,46 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertTrue(AppConfig.API.baseURL.hasPrefix("https://"), "API base URL must use HTTPS")
         XCTAssertTrue(AppConfig.API.Endpoints.submitTrip.hasPrefix("https://"), "submitTrip endpoint must use HTTPS")
         XCTAssertNotNil(URL(string: AppConfig.API.Endpoints.submitTrip))
+        XCTAssertTrue(AppConfig.API.Endpoints.deleteUserAccount.hasPrefix("https://"), "deleteUserAccount endpoint must use HTTPS")
+        XCTAssertNotNil(URL(string: AppConfig.API.Endpoints.deleteUserAccount))
+    }
+    
+    func testAppConfigLegalAndSupportLinksAreLive() {
+        XCTAssertTrue(AppConfig.Support.privacyPolicyURL.hasPrefix("https://"))
+        XCTAssertTrue(AppConfig.Support.termsOfServiceURL.hasPrefix("https://"))
+        XCTAssertFalse(AppConfig.Support.privacyPolicyURL.contains("wandermint.app"), "Privacy Policy URL must point to live hosted page")
+        XCTAssertFalse(AppConfig.Support.termsOfServiceURL.contains("wandermint.app"), "Terms URL must point to live hosted page")
+        XCTAssertNotNil(URL(string: AppConfig.Support.privacyPolicyURL))
+        XCTAssertNotNil(URL(string: AppConfig.Support.termsOfServiceURL))
+        XCTAssertFalse(AppConfig.Support.email.contains("wandermint.app"), "Support email must be a monitored address")
+        XCTAssertEqual(AppConfig.Limits.maxTripsPerDay, 10, "Client trip limit must match backend rate limit")
+        XCTAssertNotEqual(AppConfig.App.appStoreId, "0000000000", "Dummy placeholder App Store ID must not ship")
+    }
+    
+    func testInfoPlistAppStoreComplianceHygiene() {
+        let info = Bundle.main.infoDictionary ?? [:]
+        
+        // Must not declare armv7 (rejected on modern iOS)
+        let capabilities = info["UIRequiredDeviceCapabilities"] as? [String] ?? []
+        XCTAssertFalse(capabilities.contains("armv7"), "armv7 must not be in UIRequiredDeviceCapabilities")
+        
+        // Must not reference unused sensitive permission descriptions
+        let forbiddenPrivacyKeys = [
+            "NSLocationWhenInUseUsageDescription",
+            "NSLocationAlwaysAndWhenInUseUsageDescription",
+            "NSCameraUsageDescription",
+            "NSPhotoLibraryUsageDescription",
+            "NSContactsUsageDescription",
+            "NSCalendarsUsageDescription",
+            "NSAppleMusicUsageDescription"
+        ]
+        for key in forbiddenPrivacyKeys {
+            XCTAssertNil(info[key], "Unused privacy key \(key) should not be present in Info.plist")
+        }
+        
+        // Must not reference phantom SceneDelegate inside UIApplicationSceneManifest
+        let sceneManifest = info["UIApplicationSceneManifest"] as? [String: Any]
+        XCTAssertNil(sceneManifest?["UISceneConfigurations"], "SwiftUI App lifecycle should not declare a phantom UISceneConfigurations SceneDelegate")
     }
     
     func testTripDataValidatorRejectsInvalidDateOrdering() {

@@ -126,6 +126,43 @@ class UserService: ObservableObject {
         #endif
     }
     
+    /// Permanently deletes all Firestore data owned by the current user and deletes their Firebase Auth account.
+    func deleteAccount() async throws {
+        #if canImport(FirebaseAuth)
+        guard let user = Auth.auth().currentUser else {
+            throw TravelAppError.authenticationFailed
+        }
+        
+        let idToken = try await user.getIDToken(forcingRefresh: true)
+        guard let url = URL(string: AppConfig.API.Endpoints.deleteUserAccount) else {
+            throw TravelAppError.networkError("Invalid account deletion endpoint")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(idToken)", forHTTPHeaderField: "Authorization")
+        request.timeoutInterval = AppConfig.Network.requestTimeout
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw TravelAppError.networkError("Invalid server response")
+        }
+        
+        if httpResponse.statusCode == 200 {
+            try? Auth.auth().signOut()
+            return
+        } else if httpResponse.statusCode == 401 {
+            throw TravelAppError.authenticationFailed
+        } else {
+            let serverMsg = String(data: data, encoding: .utf8) ?? "Unable to delete account"
+            throw TravelAppError.dataError(serverMsg)
+        }
+        #else
+        throw TravelAppError.authenticationFailed
+        #endif
+    }
+    
     private func parseUserProfile(from data: [String: Any], userId: String) throws -> UserProfile {
         let name = data["name"] as? String ?? ""
         let email = data["email"] as? String ?? ""

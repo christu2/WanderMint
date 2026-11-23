@@ -178,60 +178,6 @@ class ConversationService: ObservableObject {
         try await batch.commit()
     }
     
-    // MARK: - Admin Functions (for your travelAdmin dashboard)
-    
-    /// Get all conversations that need attention
-    func getConversationsNeedingResponse() async throws -> [TripConversation] {
-        let snapshot = try await db.collection("tripConversations")
-            .whereField("status", isEqualTo: TripConversation.ConversationStatus.needsResponse.rawValue)
-            .order(by: "lastMessageAt", descending: true)
-            .getDocuments()
-        
-        return try snapshot.documents.compactMap { doc in
-            try parseConversation(from: doc.data(), id: doc.documentID)
-        }
-    }
-    
-    /// Send admin response
-    func sendAdminResponse(
-        conversationId: String,
-        content: String,
-        newStatus: TripConversation.ConversationStatus = .waitingForUser
-    ) async throws {
-        let messageId = UUID().uuidString
-        let message = ConversationMessage(
-            id: messageId,
-            conversationId: conversationId,
-            senderId: "admin", // Your admin ID
-            senderType: .admin,
-            messageType: .text,
-            content: content,
-            attachments: nil,
-            timestamp: createTimestamp(),
-            isRead: false,
-            metadata: nil
-        )
-        
-        let messageData = try messageToFirestore(message)
-        
-        // Add message to subcollection
-        try await db.collection("tripConversations")
-            .document(conversationId)
-            .collection("messages")
-            .document(messageId)
-            .setData(messageData)
-        
-        // Update conversation
-        try await db.collection("tripConversations")
-            .document(conversationId)
-            .updateData([
-                "lastMessageAt": createTimestamp(),
-                "status": newStatus.rawValue,
-                "unreadUserCount": FieldValue.increment(Int64(1)),
-                "unreadAdminCount": 0
-            ])
-    }
-    
     // MARK: - Notification Functions
     
     private func sendAdminNotification(conversationId: String, messageContent: String) async throws {

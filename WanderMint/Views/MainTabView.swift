@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct MainTabView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
@@ -112,6 +113,7 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showingPrivacySecurity) {
                 PrivacySecurityView()
+                    .environmentObject(authViewModel)
             }
             .sheet(isPresented: $showingHelpSupport) {
                 HelpSupportView()
@@ -281,7 +283,10 @@ struct ProfileView: View {
     }
     
     private func rateTheApp() {
-        if let url = AppConfig.App.appStoreURL {
+        if let windowScene = UIApplication.shared.connectedScenes
+            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+            SKStoreReviewController.requestReview(in: windowScene)
+        } else if let url = AppConfig.App.appStoreURL {
             UIApplication.shared.open(url)
         }
     }
@@ -416,108 +421,269 @@ struct EditProfileView: View {
     }
 }
 
-// MARK: - Placeholder Views for Settings Options
+// MARK: - Profile Detail & Settings Views
 
 struct TravelHistoryView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @State private var completedTrips: [TravelTrip] = []
+    @State private var isLoading = true
+    @State private var errorMessage: String?
+
     var body: some View {
-        NavigationView {
-            VStack(spacing: AppTheme.Spacing.lg) {
-                Image(systemName: "airplane.departure")
-                    .font(.system(size: 60))
-                    .foregroundColor(AppTheme.Colors.accent)
-                
-                Text("Travel History")
-                    .font(AppTheme.Typography.h2)
-                    .foregroundColor(AppTheme.Colors.textPrimary)
-                
-                Text("Your travel history will appear here once you complete your first trip with WanderMint.")
-                    .font(AppTheme.Typography.body)
-                    .foregroundColor(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
+        NavigationStack {
+            Group {
+                if isLoading {
+                    LoadingView(message: "Loading travel history...")
+                } else if let errorMessage = errorMessage {
+                    ErrorView(
+                        title: "Unable to Load History",
+                        message: errorMessage,
+                        retryAction: { Task { await loadCompletedTrips() } }
+                    )
+                } else if completedTrips.isEmpty {
+                    VStack(spacing: AppTheme.Spacing.lg) {
+                        Image(systemName: "airplane.departure")
+                            .font(.system(size: 60))
+                            .foregroundColor(AppTheme.Colors.accent)
+
+                        Text("No Completed Trips Yet")
+                            .font(AppTheme.Typography.h2)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+
+                        Text("Your completed itineraries will appear here once your travel consultant finalizes your trip.")
+                            .font(AppTheme.Typography.body)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        Spacer()
+                    }
+                    .padding(.top, AppTheme.Spacing.xxl)
                     .padding(.horizontal)
-                
-                Spacer()
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: AppTheme.Spacing.md) {
+                            ForEach(completedTrips) { trip in
+                                NavigationLink(destination: TripDetailView(initialTrip: trip)) {
+                                    EnhancedTripCard(trip: trip, canDelete: false)
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                            }
+                        }
+                        .padding(AppTheme.Spacing.lg)
+                    }
+                }
             }
-            .padding()
             .navigationTitle("Travel History")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(leading: Button("Close") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+            .task {
+                await loadCompletedTrips()
+            }
         }
+    }
+
+    private func loadCompletedTrips() async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            let allTrips = try await TripService().fetchUserTrips()
+            completedTrips = allTrips.filter { $0.status == .completed }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
     }
 }
 
 struct NotificationSettingsView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var tripUpdates = true
-    @State private var specialOffers = false
-    @State private var marketingEmails = false
-    
+    @AppStorage("notif_trip_updates") private var tripUpdates = true
+    @AppStorage("notif_email_updates") private var emailUpdates = true
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section(header: Text("Trip Notifications")) {
-                    Toggle("Trip Updates", isOn: $tripUpdates)
-                    Text("Get notified when your trip itinerary is ready")
+                    Toggle("Itinerary Ready Alerts", isOn: $tripUpdates)
+                    Toggle("Email Updates", isOn: $emailUpdates)
+                    Text("Get notified when your travel consultant completes or updates your itinerary.")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                 }
-                
-                Section(header: Text("Promotional")) {
-                    Toggle("Special Offers", isOn: $specialOffers)
-                    Toggle("Marketing Emails", isOn: $marketingEmails)
+
+                Section(header: Text("System Settings")) {
+                    Button(action: openSystemNotificationSettings) {
+                        HStack {
+                            Label("Manage iOS Notification Settings", systemImage: "gear")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(leading: Button("Close") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func openSystemNotificationSettings() {
+        if let url = URL(string: UIApplication.openSettingsURLString) {
+            UIApplication.shared.open(url)
         }
     }
 }
 
 struct PrivacySecurityView: View {
     @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
+    @State private var showingDeleteConfirmation = false
+    @State private var showingFinalDeleteAlert = false
+    @State private var isDeleting = false
+    @State private var deleteErrorMessage: String?
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: AppTheme.Spacing.lg) {
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                         Text("Data Protection")
                             .font(AppTheme.Typography.h3)
                             .foregroundColor(AppTheme.Colors.textPrimary)
-                        
-                        Text("Your personal information is encrypted and stored securely. We never share your data with third parties without your consent.")
+
+                        Text("Your personal information is encrypted in transit and stored securely in Google Cloud Firestore. We never sell your data or share it with third-party advertisers.")
                             .font(AppTheme.Typography.body)
                             .foregroundColor(AppTheme.Colors.textSecondary)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
                         Text("Account Security")
                             .font(AppTheme.Typography.h3)
                             .foregroundColor(AppTheme.Colors.textPrimary)
-                        
+
                         Text("Your account is protected by Firebase Authentication with industry-standard security practices.")
                             .font(AppTheme.Typography.body)
                             .foregroundColor(AppTheme.Colors.textSecondary)
                     }
-                    
-                    Button(action: {
-                        // Open privacy policy
-                    }) {
-                        Text("View Privacy Policy")
-                            .font(AppTheme.Typography.button)
-                            .foregroundColor(AppTheme.Colors.primary)
+
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                        Text("Legal")
+                            .font(AppTheme.Typography.h3)
+                            .foregroundColor(AppTheme.Colors.textPrimary)
+
+                        if let privacyURL = URL(string: AppConfig.Support.privacyPolicyURL) {
+                            Link(destination: privacyURL) {
+                                HStack {
+                                    Text("View Privacy Policy")
+                                        .font(AppTheme.Typography.button)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right.square")
+                                }
+                                .foregroundColor(AppTheme.Colors.primary)
+                                .padding(.vertical, AppTheme.Spacing.xs)
+                            }
+                        }
+
+                        if let termsURL = URL(string: AppConfig.Support.termsOfServiceURL) {
+                            Link(destination: termsURL) {
+                                HStack {
+                                    Text("Terms of Service")
+                                        .font(AppTheme.Typography.button)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right.square")
+                                }
+                                .foregroundColor(AppTheme.Colors.primary)
+                                .padding(.vertical, AppTheme.Spacing.xs)
+                            }
+                        }
                     }
-                    
+
+                    Divider()
+                        .padding(.vertical, AppTheme.Spacing.sm)
+
+                    VStack(alignment: .leading, spacing: AppTheme.Spacing.md) {
+                        Text("Delete Account")
+                            .font(AppTheme.Typography.h3)
+                            .foregroundColor(AppTheme.Colors.error)
+
+                        Text("Permanently delete your WanderMint account and all associated data, including your profile, points balances, trips, and messages. This action cannot be undone.")
+                            .font(AppTheme.Typography.bodySmall)
+                            .foregroundColor(AppTheme.Colors.textSecondary)
+
+                        Button(role: .destructive) {
+                            showingDeleteConfirmation = true
+                        } label: {
+                            HStack {
+                                if isDeleting {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Image(systemName: "trash.fill")
+                                }
+                                Text(isDeleting ? "Deleting Account..." : "Delete Account")
+                            }
+                            .font(AppTheme.Typography.button)
+                            .foregroundColor(.white)
+                            .frame(minHeight: 44)
+                            .frame(maxWidth: .infinity)
+                            .background(AppTheme.Colors.error)
+                            .cornerRadius(AppTheme.CornerRadius.md)
+                        }
+                        .disabled(isDeleting)
+                    }
+
                     Spacer()
                 }
                 .padding()
             }
             .navigationTitle("Privacy & Security")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(leading: Button("Close") { dismiss() })
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                        .disabled(isDeleting)
+                }
+            }
+            .alert("Delete Your Account?", isPresented: $showingDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Continue", role: .destructive) {
+                    showingFinalDeleteAlert = true
+                }
+            } message: {
+                Text("This will permanently remove your profile, points & miles data, all trips, and consultant messages.")
+            }
+            .alert("Confirm Permanent Deletion", isPresented: $showingFinalDeleteAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete Permanently", role: .destructive) {
+                    Task {
+                        isDeleting = true
+                        let deleted = await authViewModel.deleteAccount()
+                        isDeleting = false
+                        if deleted {
+                            dismiss()
+                        } else {
+                            deleteErrorMessage = authViewModel.errorMessage ?? "Unable to delete account. Please try again or contact \(AppConfig.Support.email)."
+                        }
+                    }
+                }
+            } message: {
+                Text("Are you absolutely sure? Your WanderMint account and all data will be permanently deleted and cannot be recovered.")
+            }
+            .alert("Account Deletion Failed", isPresented: .constant(deleteErrorMessage != nil)) {
+                Button("OK") { deleteErrorMessage = nil }
+            } message: {
+                Text(deleteErrorMessage ?? "")
+            }
         }
     }
 }

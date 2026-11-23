@@ -9,6 +9,7 @@ struct AppConfig {
         
         struct Endpoints {
             static let submitTrip = "\(baseURL)/submitTrip"
+            static let deleteUserAccount = "\(baseURL)/deleteUserAccount"
         }
     }
     
@@ -17,16 +18,17 @@ struct AppConfig {
         static let name = "WanderMint"
         static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         static let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        static let bundleId = Bundle.main.bundleIdentifier ?? "com.travelconsulting.app"
-        static let appStoreId = "0000000000" // TODO: Replace with actual App Store ID when published
+        static let bundleId = Bundle.main.bundleIdentifier ?? "com.christus.WanderMint"
+        static let appStoreId = ""
         static var appStoreURL: URL? {
-            URL(string: "https://apps.apple.com/app/id\(appStoreId)")
+            guard !appStoreId.isEmpty else { return nil }
+            return URL(string: "https://apps.apple.com/app/id\(appStoreId)")
         }
     }
     
     // MARK: - User Limits
     struct Limits {
-        static let maxTripsPerDay = 3
+        static let maxTripsPerDay = 10
         static let maxDestinationsPerTrip = 5
         static let maxGroupSize = 20
     }
@@ -53,10 +55,10 @@ struct AppConfig {
     
     // MARK: - Support Information
     struct Support {
-        static let email = "support@wandermint.io"
-        static let websiteURL = "https://wandermint.io"
-        static let privacyPolicyURL = "https://wandermint.io/privacy"
-        static let termsOfServiceURL = "https://wandermint.io/terms"
+        static let email = "nchristus93@gmail.com"
+        static let websiteURL = "https://travel-consulting-app-1.web.app"
+        static let privacyPolicyURL = "https://travel-consulting-app-1.web.app/privacy"
+        static let termsOfServiceURL = "https://travel-consulting-app-1.web.app/terms"
     }
 }
 

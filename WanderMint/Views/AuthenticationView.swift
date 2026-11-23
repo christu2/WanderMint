@@ -234,11 +234,9 @@ struct ResetPasswordView: View {
     }
     
     private func resetPassword() {
-        authViewModel.resetPassword(email: email)
-        
-        // Show success alert after a brief delay (simulating the async operation)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            if authViewModel.errorMessage == nil {
+        Task {
+            let success = await authViewModel.resetPasswordAsync(email: email)
+            if success {
                 showingSuccessAlert = true
             }
         }

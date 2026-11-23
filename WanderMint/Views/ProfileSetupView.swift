@@ -387,22 +387,16 @@ struct ProfileSetupView: View {
     private func savePointsData() async throws {
         guard let user = authViewModel.currentUser else { return }
         
-        let pointsProfile = UserPointsProfile(
-            userId: user.uid,
-            creditCardPoints: creditCardPoints,
-            hotelPoints: hotelPoints,
-            airlinePoints: airlinePoints,
-            lastUpdated: createTimestamp()
-        )
-        
         let db = Firestore.firestore()
-        let data = try JSONEncoder().encode(pointsProfile)
+        let data: [String: Any] = [
+            "userId": user.uid,
+            "creditCardPoints": creditCardPoints,
+            "hotelPoints": hotelPoints,
+            "airlinePoints": airlinePoints,
+            "lastUpdated": FieldValue.serverTimestamp()
+        ]
         
-        guard let dict = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw TravelAppError.dataError("Failed to serialize points profile")
-        }
-        
-        try await db.collection("userPoints").document(user.uid).setData(dict)
+        try await db.collection("userPoints").document(user.uid).setData(data, merge: true)
     }
     
 }

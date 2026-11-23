@@ -83,24 +83,6 @@ class TripDataParser {
                 if let decodingError = error as? DecodingError {
                     logDecodingError(decodingError)
                 }
-                
-                // Add this temporary debugging code:
-                #if DEBUG
-                print("=== TRIP PARSING DEBUG ===")
-                print("Trip ID: \(id)")
-                print("Parsing failed for destinationRecommendation")
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .typeMismatch(let type, let context):
-                        print("Type mismatch: expected \(type) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
-                    case .keyNotFound(let key, let context):
-                        print("Missing key: \(key.stringValue) at \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
-                    default:
-                        print("Other error: \(decodingError)")
-                    }
-                }
-                print("=== END DEBUG ===")
-                #endif
             }
         } else {
             destinationRecommendation = nil

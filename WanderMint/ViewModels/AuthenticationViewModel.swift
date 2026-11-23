@@ -118,16 +118,43 @@ class AuthenticationViewModel: ObservableObject {
     
     // MARK: - Reset Password
     func resetPassword(email: String) {
+        Task {
+            _ = await resetPasswordAsync(email: email)
+        }
+    }
+    
+    @discardableResult
+    func resetPasswordAsync(email: String) async -> Bool {
         isLoading = true
         errorMessage = nil
+        defer { isLoading = false }
         
-        Task {
-            do {
-                try await Auth.auth().sendPasswordReset(withEmail: email)
-            } catch {
-                self.errorMessage = error.localizedDescription
-            }
-            self.isLoading = false
+        do {
+            try await Auth.auth().sendPasswordReset(withEmail: email)
+            return true
+        } catch {
+            self.errorMessage = error.localizedDescription
+            return false
+        }
+    }
+    
+    // MARK: - Delete Account (App Store Guideline 5.1.1(v))
+    @discardableResult
+    func deleteAccount() async -> Bool {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        
+        do {
+            try await userService.deleteAccount()
+            self.userProfile = nil
+            self.currentUser = nil
+            self.isAuthenticated = false
+            self.needsOnboarding = false
+            return true
+        } catch {
+            self.errorMessage = error.localizedDescription
+            return false
         }
     }
     

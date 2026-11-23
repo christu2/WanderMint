@@ -6,26 +6,24 @@ struct TripsListView: View {
     @Binding var selectedTab: Int
     
     var body: some View {
-        NavigationView {
-            ZStack {
-                TripsListBackground()
-                TripsListContent(
-                    viewModel: viewModel, 
-                    selectedTab: $selectedTab,
-                    pendingTripId: notificationService.pendingTripId
-                )
+        ZStack {
+            TripsListBackground()
+            TripsListContent(
+                viewModel: viewModel, 
+                selectedTab: $selectedTab,
+                pendingTripId: notificationService.pendingTripId
+            )
+        }
+        .navigationBarHidden(true)
+        .onAppear {
+            viewModel.loadTrips()
+        }
+        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") {
+                viewModel.clearError()
             }
-            .navigationBarHidden(true)
-            .onAppear {
-                viewModel.loadTrips()
-            }
-            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-                Button("OK") {
-                    viewModel.clearError()
-                }
-            } message: {
-                Text(viewModel.errorMessage ?? "")
-            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
     }
 }
@@ -137,20 +135,29 @@ struct TripsListGrid: View {
     
     var body: some View {
         ForEach(trips) { trip in
+            let canDelete = viewModel.canDeleteTrip(trip)
             NavigationLink(value: trip.id) {
-                EnhancedTripCard(trip: trip, canDelete: viewModel.canDeleteTrip(trip))
+                EnhancedTripCard(
+                    trip: trip,
+                    canDelete: canDelete,
+                    onDelete: canDelete ? {
+                        tripToDelete = trip
+                        showingDeleteAlert = true
+                    } : nil
+                )
             }
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, AppTheme.Spacing.lg)
             .accessibilityLabel("Trip to \(trip.displayDestinations)")
             .accessibilityHint("View trip details and itinerary")
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                if viewModel.canDeleteTrip(trip) {
-                    Button("Delete", role: .destructive) {
+            .contextMenu {
+                if canDelete {
+                    Button(role: .destructive) {
                         tripToDelete = trip
                         showingDeleteAlert = true
+                    } label: {
+                        Label("Delete Trip", systemImage: "trash")
                     }
-                    .tint(.red)
                 }
             }
         }
@@ -256,6 +263,7 @@ struct TripsListEmptyStateButton: View {
 struct EnhancedTripCard: View {
     let trip: TravelTrip
     let canDelete: Bool
+    var onDelete: (() -> Void)? = nil
     
     var body: some View {
         VStack(spacing: 0) {
@@ -282,10 +290,22 @@ struct EnhancedTripCard: View {
                             StatusBadge(status: trip.status)
                             
                             if canDelete {
-                                Image(systemName: "trash")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.white.opacity(0.7))
-                                    .help("Swipe left to delete")
+                                if let onDelete = onDelete {
+                                    Button(action: onDelete) {
+                                        Image(systemName: "trash")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .padding(6)
+                                            .background(Color.black.opacity(0.18))
+                                            .clipShape(Circle())
+                                    }
+                                    .buttonStyle(PlainButtonStyle())
+                                    .accessibilityLabel("Delete trip to \(trip.displayDestinations)")
+                                } else {
+                                    Image(systemName: "trash")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
                             }
                         }
                         
