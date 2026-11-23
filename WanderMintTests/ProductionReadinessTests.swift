@@ -432,6 +432,18 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertNil(sceneManifest?["UISceneConfigurations"], "SwiftUI App lifecycle should not declare a phantom UISceneConfigurations SceneDelegate")
     }
     
+    func testSafeExternalURLBlocksNonHttpSchemesAndMalformedURLs() {
+        XCTAssertNotNil(AppConfig.safeExternalURL(from: "https://www.hyatt.com/hotels"))
+        XCTAssertNotNil(AppConfig.safeExternalURL(from: "http://example.com/booking"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: "javascript:alert(1)"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: "tel:+15551234567"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: "file:///etc/passwd"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: "sms:+15551234567"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: "not a url"))
+        XCTAssertNil(AppConfig.safeExternalURL(from: ""))
+        XCTAssertNil(AppConfig.safeExternalURL(from: nil))
+    }
+    
     func testTripDataValidatorRejectsInvalidDateOrdering() {
         XCTAssertThrowsError(
             try TripDataValidator.validateUserInput(

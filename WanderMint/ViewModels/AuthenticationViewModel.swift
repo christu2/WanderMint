@@ -43,10 +43,10 @@ class AuthenticationViewModel: ObservableObject {
                 self?.isAuthenticated = user != nil
                 
                 // Load user profile when authenticated
-                if let user = user {
+                if user != nil {
                     Task {
                         await self?.loadUserProfile()
-                        try await self?.userService.updateLastLogin()
+                        try? await self?.userService.updateLastLogin()
                     }
                 } else {
                     self?.userProfile = nil
@@ -69,14 +69,14 @@ class AuthenticationViewModel: ObservableObject {
                     switch error.code {
                     case 17008: // FIRAuthErrorCodeInvalidEmail
                         self.errorMessage = "Please enter a valid email address"
-                    case 17009: // FIRAuthErrorCodeWrongPassword
-                        self.errorMessage = "Incorrect password. Please try again"
-                    case 17011: // FIRAuthErrorCodeUserNotFound
-                        self.errorMessage = "No account found with this email address"
+                    case 17004, 17009, 17011: // Invalid credential, wrong password, or user not found (uniform message prevents account enumeration)
+                        self.errorMessage = "Invalid email or password. Please try again"
+                    case 17010: // FIRAuthErrorCodeTooManyRequests
+                        self.errorMessage = "Too many attempts. Please wait a moment and try again"
                     case 17020: // FIRAuthErrorCodeNetworkError
                         self.errorMessage = "Network error. Please check your connection and try again"
                     default:
-                        self.errorMessage = error.localizedDescription
+                        self.errorMessage = "Unable to sign in. Please check your credentials and try again"
                     }
                 } else {
                     self.errorMessage = "Connection error. Please check your internet connection and try again"

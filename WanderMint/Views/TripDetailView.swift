@@ -936,11 +936,10 @@ struct UnifiedTransportationCardView: View {
                     .padding(.top, 4)
             }
             
-            if let bookingUrl = transport.bookingUrl, !bookingUrl.isEmpty {
+            if let bookingUrl = transport.bookingUrl,
+               let url = AppConfig.safeExternalURL(from: bookingUrl) {
                 Button(action: {
-                    if let url = URL(string: bookingUrl) {
-                        UIApplication.shared.open(url)
-                    }
+                    UIApplication.shared.open(url)
                 }) {
                     HStack {
                         Image(systemName: "link")
@@ -1279,8 +1278,9 @@ struct FlightDetailsSheet: View {
                             VStack(spacing: 8) {
                                 // Primary booking button - uses Google Flights URL from booking instructions
                                 if let bookingInstructions = flight.bookingInstructions,
-                                   let googleFlightsUrl = extractGoogleFlightsUrl(from: bookingInstructions) {
-                                    Link(destination: URL(string: googleFlightsUrl)!) {
+                                   let googleFlightsUrl = extractGoogleFlightsUrl(from: bookingInstructions),
+                                   let url = AppConfig.safeExternalURL(from: googleFlightsUrl) {
+                                    Link(destination: url) {
                                         HStack {
                                             Image(systemName: "airplane.departure")
                                             Text("Book with \(flight.airline)")
@@ -1296,8 +1296,9 @@ struct FlightDetailsSheet: View {
                                     }
                                 }
                                 // Fallback to direct URL if Google Flights URL not found
-                                else if let directUrl = flight.directAirlineBookingUrl {
-                                    Link(destination: URL(string: directUrl)!) {
+                                else if let directUrl = flight.directAirlineBookingUrl,
+                                        let url = AppConfig.safeExternalURL(from: directUrl) {
+                                    Link(destination: url) {
                                         HStack {
                                             Image(systemName: "airplane.departure")
                                             Text("Book with \(flight.airline)")
@@ -1314,8 +1315,9 @@ struct FlightDetailsSheet: View {
                                 }
                                 
                                 // Manual booking URL if provided
-                                if let bookingUrl = flight.bookingUrl, !bookingUrl.isEmpty {
-                                    Link(destination: URL(string: bookingUrl)!) {
+                                if let bookingUrl = flight.bookingUrl,
+                                   let url = AppConfig.safeExternalURL(from: bookingUrl) {
+                                    Link(destination: url) {
                                         HStack {
                                             Image(systemName: "safari")
                                             Text("Book Online")

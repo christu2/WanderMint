@@ -90,4 +90,19 @@ extension AppConfig {
         let path = receiptURL.path
         return path.contains("receipt") && !path.contains("sandboxReceipt")
     }
+    
+    /// Validates and returns an external web URL only if it uses an explicit http/https scheme with a non-empty host.
+    /// Prevents crashes from malformed strings and blocks unsafe schemes (javascript:, file:, tel:, sms:, etc.).
+    static func safeExternalURL(from rawString: String?) -> URL? {
+        guard let trimmed = rawString?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty,
+              let components = URLComponents(string: trimmed),
+              let scheme = components.scheme?.lowercased(),
+              (scheme == "https" || scheme == "http"),
+              let host = components.host,
+              !host.isEmpty else {
+            return nil
+        }
+        return components.url
+    }
 }
