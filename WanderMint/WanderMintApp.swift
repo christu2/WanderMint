@@ -6,8 +6,28 @@ import Firebase
 #if canImport(FirebaseAnalytics)
 import FirebaseAnalytics
 #endif
+#if canImport(FirebaseAppCheck)
+import FirebaseAppCheck
+#endif
 #if canImport(FirebaseCrashlytics)
 import FirebaseCrashlytics
+#endif
+
+#if canImport(FirebaseAppCheck)
+/// Configures Firebase App Check: uses Debug provider on Simulator / Debug builds
+/// and Apple App Attest (with DeviceCheck fallback) on Release physical devices.
+final class WanderMintAppCheckProviderFactory: NSObject, AppCheckProviderFactory {
+    func createProvider(with app: FirebaseApp) -> AppCheckProvider? {
+        #if DEBUG || targetEnvironment(simulator)
+        return AppCheckDebugProvider(app: app)
+        #else
+        if #available(iOS 14.0, *) {
+            return AppAttestProvider(app: app)
+        }
+        return DeviceCheckProvider(app: app)
+        #endif
+    }
+}
 #endif
 
 @main
@@ -33,6 +53,9 @@ struct WanderMintApp: App {
     }
     
     private func configureFirebase() {
+        #if canImport(FirebaseAppCheck)
+        AppCheck.setAppCheckProviderFactory(WanderMintAppCheckProviderFactory())
+        #endif
         #if canImport(Firebase)
         FirebaseApp.configure()
         setupFirebaseServices()
@@ -97,29 +120,25 @@ struct WanderMintApp: App {
     
     private func setupFirebaseServices() {
         #if canImport(FirebaseAnalytics) && canImport(FirebaseCrashlytics)
-        do {
-            // Enable Analytics data collection
-            Analytics.setAnalyticsCollectionEnabled(true)
-            
-            // Configure Crashlytics
-            Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
-            
-            // Set user properties for better analytics segmentation
-            Analytics.setUserProperty(nil, forName: "app_version")
-            Analytics.setUserProperty(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, forName: "app_version")
-            
-            // Log app launch event
-            Analytics.logEvent(AnalyticsEventAppOpen, parameters: [
-                AnalyticsParameterSource: "ios_app"
-            ])
-            
-            #if DEBUG
-            // Disable analytics in debug mode
-            Analytics.setAnalyticsCollectionEnabled(false)
-            #endif
-        } catch {
-            // Silently handle Firebase setup errors
-        }
+        // Enable Analytics data collection
+        Analytics.setAnalyticsCollectionEnabled(true)
+        
+        // Configure Crashlytics
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        
+        // Set user properties for better analytics segmentation
+        Analytics.setUserProperty(nil, forName: "app_version")
+        Analytics.setUserProperty(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, forName: "app_version")
+        
+        // Log app launch event
+        Analytics.logEvent(AnalyticsEventAppOpen, parameters: [
+            AnalyticsParameterSource: "ios_app"
+        ])
+        
+        #if DEBUG
+        // Disable analytics in debug mode
+        Analytics.setAnalyticsCollectionEnabled(false)
+        #endif
         #endif
     }
 

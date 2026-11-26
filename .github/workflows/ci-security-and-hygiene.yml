@@ -1,0 +1,49 @@
+name: iOS Security & App Store Hygiene Checks
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  ios-hygiene:
+    name: Static Security, Navigation & Info.plist Guardrails
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Ensure no secrets are tracked in Git
+        run: |
+          if git ls-files | grep -E "GoogleService-Info\.plist$|\.env$"; then
+            echo "❌ Sensitive config file is tracked in Git!"
+            exit 1
+          fi
+          echo "✅ No tracked Firebase/env secrets found."
+
+      - name: Guard against legacy NavigationView (iPad split-view bug) & nested NavigationStack
+        run: |
+          if grep -rn "NavigationView {" WanderMint/Views/; then
+            echo "❌ Legacy NavigationView found in Views/ — use NavigationStack instead."
+            exit 1
+          fi
+          if grep -n "NavigationStack {" WanderMint/Views/TripConversationView.swift; then
+            echo "❌ TripConversationView must not nest a NavigationStack."
+            exit 1
+          fi
+          echo "✅ Navigation hierarchy guards passed."
+
+      - name: Verify Info.plist App Store & ATS security invariants
+        run: |
+          python3 -c '
+            import plistlib, sys
+            with open("Info.plist", "rb") as f:
+                info = plistlib.load(f)
+            assert "armv7" not in info.get("UIRequiredDeviceCapabilities", []), "armv7 must not be required"
+            assert info.get("NSAppTransportSecurity", {}).get("NSAllowsArbitraryLoads") is False, "ATS must disallow arbitrary loads"
+            assert "UISceneConfigurations" not in info.get("UIApplicationSceneManifest", {}), "No phantom SceneDelegate"
+            print("✅ Info.plist security & App Store invariants verified.")
+          '

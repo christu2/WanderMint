@@ -536,6 +536,23 @@ final class ProductionReadinessTests: XCTestCase {
         )
     }
     
+    func testAppCheckProviderFactoryAndEntitlementsConfigured() throws {
+        let testFileURL = URL(fileURLWithPath: #filePath)
+        let entitlementsURL = testFileURL
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("WanderMint/WanderMint.entitlements")
+        
+        XCTAssertTrue(FileManager.default.fileExists(atPath: entitlementsURL.path), "WanderMint.entitlements must exist for App Attest")
+        let entitlements = try String(contentsOf: entitlementsURL, encoding: .utf8)
+        XCTAssertTrue(entitlements.contains("com.apple.developer.devicecheck.appattest-environment"), "App Attest entitlement must be configured")
+        
+        #if canImport(FirebaseAppCheck)
+        let factory = WanderMintAppCheckProviderFactory()
+        XCTAssertNotNil(factory)
+        #endif
+    }
+    
     func testTripDataValidatorRejectsInvalidDateOrdering() {
         XCTAssertThrowsError(
             try TripDataValidator.validateUserInput(
