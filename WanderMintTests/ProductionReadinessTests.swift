@@ -572,6 +572,110 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertNotEqual(nonce1, nonce2, "Cryptographic nonces must be unique per request")
     }
     
+    // MARK: - 6. Feature B: Points Savings (CPP) & Interactive Booking Checklist Tests
+    
+    func testPointsValueCalculatorComputesSavingsAndCPP() throws {
+        let json: [String: Any] = [
+            "id": "rec_cpp_1",
+            "tripOverview": "Madison weekend on Hyatt points",
+            "costNotes": "Transfer 36,000 Chase UR 1:1 to World of Hyatt",
+            "destinations": [
+                [
+                    "id": "d1",
+                    "cityName": "Madison, WI",
+                    "arrivalDate": "2026-11-15",
+                    "departureDate": "2026-11-18",
+                    "numberOfNights": 3,
+                    "accommodationOptions": [
+                        [
+                            "id": "a1",
+                            "priority": 1,
+                            "hotel": [
+                                "name": "Hyatt Place Madison",
+                                "rating": 4.5,
+                                "pricePerNight": 0.0,
+                                "pointsPerNight": 12000,
+                                "loyaltyProgram": "World of Hyatt",
+                                "location": "333 W Washington Ave",
+                                "bookingUrl": "https://www.hyatt.com",
+                                "detailedDescription": "Walkable downtown hotel"
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "logistics": [
+                "transportSegments": [
+                    [
+                        "id": "s1",
+                        "fromCity": "JFK",
+                        "toCity": "CDG",
+                        "departureDate": "2026-05-12",
+                        "segmentType": "outbound",
+                        "transportOptions": [
+                            [
+                                "id": "o1",
+                                "transportType": "flight",
+                                "priority": 1,
+                                "duration": "7h",
+                                "bookingUrl": "https://www.airfrance.com",
+                                "cost": [
+                                    "paymentType": "points",
+                                    "cashAmount": 210.0,
+                                    "pointsAmount": 50000,
+                                    "pointsProgram": "Flying Blue"
+                                ],
+                                "details": [
+                                    "flightNumber": "AF 11",
+                                    "airline": "Air France",
+                                    "details": [
+                                        "departure": ["airportCode": "JFK", "time": "19:30"],
+                                        "arrival": ["airportCode": "CDG", "time": "08:45"],
+                                        "route": "Direct",
+                                        "showDateChange": false
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                ]
+            ],
+            "totalCost": [
+                "totalEstimate": 210.0,
+                "flights": 210.0,
+                "accommodation": 0.0,
+                "activities": 0.0,
+                "food": 0.0,
+                "localTransport": 0.0,
+                "miscellaneous": 0.0,
+                "currency": "USD",
+                "pointsUsed": [
+                    "World of Hyatt": 36000,
+                    "Flying Blue": 50000
+                ]
+            ]
+        ]
+        
+        let data = try JSONSerialization.data(withJSONObject: json)
+        let rec = try JSONDecoder().decode(AdminDestinationBasedRecommendation.self, from: data)
+        
+        let summary = try XCTUnwrap(PointsValueCalculator.summarize(recommendation: rec))
+        XCTAssertEqual(summary.totalPointsUsed, 86000)
+        // 36,000 * 2.0c ($720) + 50,000 * 1.5c ($750) = $1,470 -> ~1.71c/pt
+        XCTAssertEqual(summary.estimatedCashValueSaved, 1470.0, accuracy: 0.01)
+        XCTAssertGreaterThan(summary.centsPerPoint, 1.7)
+        XCTAssertEqual(summary.valueRating, "Great Value")
+        
+        let checklist = TripChecklistBuilder.buildItems(from: rec)
+        XCTAssertEqual(checklist.count, 4) // 2 transfer prep + 1 flight + 1 hotel
+        XCTAssertEqual(checklist[0].category, .pointsTransfer)
+        XCTAssertEqual(checklist[1].category, .pointsTransfer)
+        XCTAssertEqual(checklist[2].category, .flight)
+        XCTAssertEqual(checklist[2].actionURL?.absoluteString, "https://www.airfrance.com")
+        XCTAssertEqual(checklist[3].category, .hotel)
+        XCTAssertEqual(checklist[3].actionURL?.absoluteString, "https://www.hyatt.com")
+    }
+    
     func testTripDataValidatorRejectsInvalidDateOrdering() {
         XCTAssertThrowsError(
             try TripDataValidator.validateUserInput(

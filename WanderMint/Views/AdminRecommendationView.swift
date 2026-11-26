@@ -24,6 +24,10 @@ struct AdminRecommendationView: View {
     
     var body: some View {
         VStack(spacing: 0) {
+            // Points Value & CPP Savings Banner (when itinerary redeems points/miles)
+            PointsSavingsBannerCard(recommendation: recommendation)
+                .padding(.bottom, 12)
+            
             // Trip Overview
             if !recommendation.tripOverview.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -78,7 +82,8 @@ struct AdminRecommendationView: View {
                     )
                 case .overview:
                     AdminOverviewTabView(
-                        recommendation: recommendation
+                        recommendation: recommendation,
+                        tripId: tripId
                     )
                 }
             }
@@ -166,9 +171,12 @@ struct AdminLogisticsTabView: View {
 
 struct AdminOverviewTabView: View {
     let recommendation: AdminDestinationBasedRecommendation
+    let tripId: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            InteractiveBookingChecklistCard(tripId: tripId, recommendation: recommendation)
+            
             AdminCostBreakdownView(totalCost: recommendation.totalCost, recommendation: recommendation)
             
             if !recommendation.destinations.isEmpty {
