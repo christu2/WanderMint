@@ -7,6 +7,7 @@
 
 
 import SwiftUI
+import AuthenticationServices
 #if canImport(Firebase)
 import Firebase
 #endif
@@ -83,6 +84,31 @@ struct AuthenticationView: View {
                         .cornerRadius(8)
                     }
                     .disabled(!isFormValid || authViewModel.isLoading)
+                    
+                    // Divider + Sign in with Apple
+                    HStack {
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 1)
+                        Text("or")
+                            .font(.footnote)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(height: 1)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    SignInWithAppleButton(.continue) { request in
+                        authViewModel.prepareAppleSignInRequest(request)
+                    } onCompletion: { result in
+                        authViewModel.handleAppleSignInResult(result)
+                    }
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 48)
+                    .cornerRadius(8)
+                    .disabled(authViewModel.isLoading)
                     
                     // Toggle Mode Button
                     Button(action: {

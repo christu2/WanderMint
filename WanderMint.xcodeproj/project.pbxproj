@@ -14,6 +14,7 @@
 		019DF5F02F0B6C71008E5D5D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5EF2F0B6C71008E5D5D /* FirebaseFirestore */; };
 		019DF5F22F0B6C71008E5D5D /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5F12F0B6C71008E5D5D /* FirebasePerformance */; };
 		019DF5F42F0B6C71008E5D5D /* FirebaseAppCheck in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5F32F0B6C71008E5D5D /* FirebaseAppCheck */; };
+		019DF5F62F0B6C71008E5D5D /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 019DF5F52F0B6C71008E5D5D /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +62,7 @@
 				019DF5EC2F0B6C71008E5D5D /* FirebaseAuth in Frameworks */,
 				019DF5F02F0B6C71008E5D5D /* FirebaseFirestore in Frameworks */,
 				019DF5F42F0B6C71008E5D5D /* FirebaseAppCheck in Frameworks */,
+				019DF5F62F0B6C71008E5D5D /* FirebaseMessaging in Frameworks */,
 				019DF5372F0959DC008E5D5D /* WanderMintSchemas in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -562,6 +564,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 019DF5E82F0B6C71008E5D5D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAppCheck;
+		};
+		019DF5F52F0B6C71008E5D5D /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 019DF5E82F0B6C71008E5D5D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -546,11 +546,30 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: entitlementsURL.path), "WanderMint.entitlements must exist for App Attest")
         let entitlements = try String(contentsOf: entitlementsURL, encoding: .utf8)
         XCTAssertTrue(entitlements.contains("com.apple.developer.devicecheck.appattest-environment"), "App Attest entitlement must be configured")
+        XCTAssertTrue(entitlements.contains("aps-environment"), "Push Notifications (APNs) entitlement must be configured")
+        XCTAssertTrue(entitlements.contains("com.apple.developer.applesignin"), "Sign in with Apple entitlement must be configured")
+        
+        let bgModes = Bundle.main.infoDictionary?["UIBackgroundModes"] as? [String] ?? []
+        XCTAssertTrue(bgModes.contains("remote-notification"), "UIBackgroundModes must declare remote-notification for FCM push")
         
         #if canImport(FirebaseAppCheck)
         let factory = WanderMintAppCheckProviderFactory()
         XCTAssertNotNil(factory)
         #endif
+    }
+    
+    func testAppleSignInNonceAndSHA256Crypto() {
+        // Known NIST SHA-256 vector for "abc"
+        XCTAssertEqual(
+            AuthenticationViewModel.sha256("abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        )
+        
+        let nonce1 = AuthenticationViewModel.randomNonceString(length: 32)
+        let nonce2 = AuthenticationViewModel.randomNonceString(length: 32)
+        XCTAssertEqual(nonce1.count, 32)
+        XCTAssertEqual(nonce2.count, 32)
+        XCTAssertNotEqual(nonce1, nonce2, "Cryptographic nonces must be unique per request")
     }
     
     func testTripDataValidatorRejectsInvalidDateOrdering() {

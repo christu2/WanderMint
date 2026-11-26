@@ -7,6 +7,9 @@
 
 
 import Foundation
+import AuthenticationServices
+import CryptoKit
+import Security
 #if canImport(Firebase)
 import Firebase
 #endif
@@ -25,6 +28,7 @@ class AuthenticationViewModel: ObservableObject {
     
     private var authStateListenerHandle: AuthStateDidChangeListenerHandle?
     private let userService = UserService.shared
+    private var currentAppleSignInNonce: String?
     
     init() {
         setupAuthStateListener()
@@ -109,11 +113,113 @@ class AuthenticationViewModel: ObservableObject {
     
     // MARK: - Sign Out
     func signOut() {
-        do {
-            try Auth.auth().signOut()
-        } catch {
-            errorMessage = error.localizedDescription
+        Task {
+            await NotificationService.shared.removeFCMTokenOnSignOut()
+            do {
+                try Auth.auth().signOut()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
+    }
+    
+    // MARK: - Sign in with Apple
+    
+    /// Configures an Apple ID authorization request with requested scopes and a SHA-256 hashed cryptographic nonce.
+    func prepareAppleSignInRequest(_ request: ASAuthorizationAppleIDRequest) {
+        clearError()
+        let nonce = Self.randomNonceString()
+        currentAppleSignInNonce = nonce
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = Self.sha256(nonce)
+    }
+    
+    /// Handles the Sign in with Apple authorization callback and authenticates with Firebase Auth.
+    func handleAppleSignInResult(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .failure(let error):
+            if let authError = error as? ASAuthorizationError, authError.code == .canceled {
+                // User dismissed the Apple Sign-In sheet intentionally — do not display an error banner
+                return
+            }
+            self.errorMessage = "Apple Sign In failed. Please try again."
+        case .success(let authorization):
+            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let nonce = currentAppleSignInNonce,
+                  let appleIDToken = appleIDCredential.identityToken,
+                  let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
+                self.errorMessage = "Unable to verify Apple ID credentials. Please try again."
+                return
+            }
+            
+            currentAppleSignInNonce = nil
+            isLoading = true
+            errorMessage = nil
+            
+            let fullName = [
+                appleIDCredential.fullName?.givenName,
+                appleIDCredential.fullName?.familyName
+            ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+            
+            Task {
+                defer { self.isLoading = false }
+                do {
+                    #if canImport(FirebaseAuth)
+                    let credential = OAuthProvider.appleCredential(
+                        withIDToken: idTokenString,
+                        rawNonce: nonce,
+                        fullName: appleIDCredential.fullName
+                    )
+                    let authResult = try await Auth.auth().signIn(with: credential)
+                    
+                    // Create Firestore user profile on first Sign in with Apple (Apple only sends name once)
+                    let existingProfile = try? await userService.getUserProfile()
+                    if existingProfile == nil {
+                        try await userService.createUserProfile(for: authResult.user, name: fullName)
+                    } else if !fullName.isEmpty, (existingProfile?.name.isEmpty ?? true) {
+                        try? await userService.updateUserProfile(name: fullName)
+                    }
+                    await loadUserProfile()
+                    #endif
+                } catch {
+                    self.errorMessage = "Unable to sign in with Apple. Please try again."
+                }
+            }
+        }
+    }
+    
+    /// Generates a cryptographically secure random alphanumeric nonce string for OIDC/Apple Sign-In.
+    nonisolated static func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        var result = ""
+        var remainingLength = length
+        
+        while remainingLength > 0 {
+            var randoms = [UInt8](repeating: 0, count: 16)
+            let status = SecRandomCopyBytes(kSecRandomDefault, randoms.count, &randoms)
+            if status != errSecSuccess {
+                fatalError("Unable to generate secure nonce. SecRandomCopyBytes failed with OSStatus \(status)")
+            }
+            for random in randoms {
+                if remainingLength == 0 { break }
+                if random < charset.count {
+                    result.append(charset[Int(random)])
+                    remainingLength -= 1
+                }
+            }
+        }
+        return result
+    }
+    
+    /// Returns the lowercase SHA-256 hex digest of the input string.
+    nonisolated static func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        return hashedData.compactMap { String(format: "%02x", $0) }.joined()
     }
     
     // MARK: - Reset Password

@@ -1,5 +1,7 @@
 import SwiftUI
+import UIKit
 import Combine
+import UserNotifications
 #if canImport(Firebase)
 import Firebase
 #endif
@@ -11,6 +13,9 @@ import FirebaseAppCheck
 #endif
 #if canImport(FirebaseCrashlytics)
 import FirebaseCrashlytics
+#endif
+#if canImport(FirebaseMessaging)
+import FirebaseMessaging
 #endif
 
 #if canImport(FirebaseAppCheck)
@@ -30,8 +35,43 @@ final class WanderMintAppCheckProviderFactory: NSObject, AppCheckProviderFactory
 }
 #endif
 
+/// Bridges UIKit APNs device-token callbacks and Firebase Cloud Messaging token updates into SwiftUI.
+final class WanderMintAppDelegate: NSObject, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().delegate = self
+        #endif
+        return true
+    }
+
+    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        #if canImport(FirebaseMessaging)
+        Messaging.messaging().apnsToken = deviceToken
+        #endif
+    }
+
+    func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Logger.warning("Remote notification registration failed: \(error.localizedDescription)", category: Logger.network)
+    }
+}
+
+#if canImport(FirebaseMessaging)
+extension WanderMintAppDelegate: MessagingDelegate {
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        guard let token = fcmToken, !token.isEmpty else { return }
+        Task { @MainActor in
+            await NotificationService.shared.saveFCMToken(token)
+        }
+    }
+}
+#endif
+
 @main
 struct WanderMintApp: App {
+    @UIApplicationDelegateAdaptor(WanderMintAppDelegate.self) private var appDelegate
     @StateObject private var authViewModel = AuthenticationViewModel()
     @StateObject private var notificationService = NotificationService.shared
     @State private var appState: AppState = .splash

@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import UserNotifications
 #if canImport(Firebase)
 import Firebase
@@ -8,6 +9,9 @@ import FirebaseAuth
 #endif
 #if canImport(FirebaseFirestore)
 import FirebaseFirestore
+#endif
+#if canImport(FirebaseMessaging)
+import FirebaseMessaging
 #endif
 
 @MainActor
@@ -23,19 +27,26 @@ class NotificationService: NSObject, ObservableObject {
     
     @Published var hasNotificationPermission = false
     @Published var pendingTripId: String? = nil // For deep linking
+    private var currentFCMToken: String?
     
     private override init() {
         super.init()
         center.delegate = self
     }
     
-    // MARK: - Permission Management
+    // MARK: - Permission Management & APNs/FCM Registration
     
     func requestPermission() async {
         do {
             let granted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
             await MainActor.run {
                 hasNotificationPermission = granted
+                if granted {
+                    UIApplication.shared.registerForRemoteNotifications()
+                }
+            }
+            if granted {
+                await syncCurrentFCMToken()
             }
         } catch {
             await MainActor.run {
@@ -46,9 +57,74 @@ class NotificationService: NSObject, ObservableObject {
     
     func checkPermissionStatus() async {
         let settings = await center.notificationSettings()
+        let authorized = settings.authorizationStatus == .authorized || settings.authorizationStatus == .provisional
         await MainActor.run {
-            hasNotificationPermission = settings.authorizationStatus == .authorized
+            hasNotificationPermission = authorized
+            if authorized {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
         }
+    }
+    
+    /// Persists the device's FCM registration token on the authenticated user's Firestore document.
+    func saveFCMToken(_ token: String) async {
+        currentFCMToken = token
+        #if canImport(FirebaseAuth) && canImport(FirebaseFirestore)
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        let enabled = UserDefaults.standard.object(forKey: "notif_trip_updates") as? Bool ?? true
+        do {
+            try await db.collection("users").document(uid).setData([
+                "fcmTokens": FieldValue.arrayUnion([token]),
+                "pushNotificationsEnabled": enabled,
+                "fcmTokenUpdatedAt": FieldValue.serverTimestamp()
+            ], merge: true)
+        } catch {
+            Logger.warning("Failed to save FCM token: \(error.localizedDescription)", category: Logger.data)
+        }
+        #endif
+    }
+    
+    /// Fetches and persists the active FCM token after login.
+    func syncCurrentFCMToken() async {
+        #if canImport(FirebaseMessaging)
+        do {
+            let token = try await Messaging.messaging().token()
+            if !token.isEmpty {
+                await saveFCMToken(token)
+            }
+        } catch {
+            // Token may not be ready yet on Simulator or before APNs registration completes
+        }
+        #endif
+    }
+    
+    /// Syncs the user's push notification toggle preference to Firestore so backend triggers respect it.
+    func updatePushPreference(enabled: Bool) async {
+        #if canImport(FirebaseAuth) && canImport(FirebaseFirestore)
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        do {
+            try await db.collection("users").document(uid).setData([
+                "pushNotificationsEnabled": enabled
+            ], merge: true)
+        } catch {
+            Logger.warning("Failed to update push preference: \(error.localizedDescription)", category: Logger.data)
+        }
+        #endif
+    }
+    
+    /// Removes this device's FCM token from Firestore before signing out so notifications stop immediately.
+    func removeFCMTokenOnSignOut() async {
+        #if canImport(FirebaseAuth) && canImport(FirebaseFirestore)
+        guard let uid = Auth.auth().currentUser?.uid,
+              let token = currentFCMToken, !token.isEmpty else { return }
+        do {
+            try await db.collection("users").document(uid).updateData([
+                "fcmTokens": FieldValue.arrayRemove([token])
+            ])
+        } catch {
+            // Non-fatal on sign out
+        }
+        #endif
     }
     
     // MARK: - Setup and Teardown
@@ -64,6 +140,8 @@ class NotificationService: NSObject, ObservableObject {
         
         if !hasNotificationPermission {
             await requestPermission()
+        } else {
+            await syncCurrentFCMToken()
         }
         
         #if canImport(FirebaseFirestore)

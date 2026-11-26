@@ -510,6 +510,11 @@ struct NotificationSettingsView: View {
             Form {
                 Section(header: Text("Trip Notifications")) {
                     Toggle("Itinerary Ready Alerts", isOn: $tripUpdates)
+                        .onChange(of: tripUpdates) { newValue in
+                            Task {
+                                await NotificationService.shared.updatePushPreference(enabled: newValue)
+                            }
+                        }
                     Toggle("Email Updates", isOn: $emailUpdates)
                     Text("Get notified when your travel consultant completes or updates your itinerary.")
                         .font(.caption)
