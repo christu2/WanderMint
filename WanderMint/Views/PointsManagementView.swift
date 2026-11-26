@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct PointsManagementView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var viewModel = PointsManagementViewModel()
     @State private var selectedProvider = ""
     @State private var pointsAmount = ""
@@ -54,7 +55,13 @@ struct PointsManagementView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .navigationTitle("Points & Miles")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") { dismiss() }
+                }
+            }
             .onAppear {
                 viewModel.loadPoints()
                 // Initialize available providers for the default selected type

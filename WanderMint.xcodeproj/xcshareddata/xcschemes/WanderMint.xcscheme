@@ -41,6 +41,17 @@
                ReferencedContainer = "container:WanderMint.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "0192FB872E2067140011E20F"
+               BuildableName = "WanderMintUITests.xctest"
+               BlueprintName = "WanderMintUITests"
+               ReferencedContainer = "container:WanderMint.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

@@ -369,6 +369,7 @@ struct SettingsRow: View {
                     .foregroundColor(AppTheme.Colors.textTertiary)
             }
             .padding(.vertical, AppTheme.Spacing.sm)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -812,6 +813,7 @@ struct FAQItem: View {
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(AppTheme.Colors.primary)
                 }
+                .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
             
