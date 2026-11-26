@@ -404,7 +404,8 @@ final class ProductionReadinessTests: XCTestCase {
         XCTAssertNotNil(URL(string: AppConfig.Support.termsOfServiceURL))
         XCTAssertFalse(AppConfig.Support.email.contains("wandermint.app"), "Support email must be a monitored address")
         XCTAssertEqual(AppConfig.Limits.maxTripsPerDay, 10, "Client trip limit must match backend rate limit")
-        XCTAssertNotEqual(AppConfig.App.appStoreId, "0000000000", "Dummy placeholder App Store ID must not ship")
+        XCTAssertEqual(AppConfig.App.appStoreId, "6748586609", "App Store ID should match live WanderMint App Store listing")
+        XCTAssertEqual(AppConfig.App.appStoreURL?.absoluteString, "https://apps.apple.com/app/id6748586609")
     }
     
     func testInfoPlistAppStoreComplianceHygiene() {

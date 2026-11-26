@@ -19,7 +19,7 @@ struct AppConfig {
         static let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         static let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         static let bundleId = Bundle.main.bundleIdentifier ?? "com.christus.WanderMint"
-        static let appStoreId = ""
+        static let appStoreId = "6748586609"
         static var appStoreURL: URL? {
             guard !appStoreId.isEmpty else { return nil }
             return URL(string: "https://apps.apple.com/app/id\(appStoreId)")
